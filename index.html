@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تطبيق MR - إدارة الطلاب والمدفوعات</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Tajawal', sans-serif;
+      background-color: #0f172a;
+      color: #f8fafc;
+    }
+    .gold-gradient {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    }
+    .gold-text {
+      color: #fbbf24;
+    }
+    .card-bg {
+      background-color: #1e293b;
+      border: 1px solid #334155;
+    }
+    .input-style {
+      background-color: #0f172a;
+      border: 1px solid #475569;
+      color: #fff;
+    }
+    .input-style:focus {
+      border-color: #f59e0b;
+      outline: none;
+    }
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between">
+
+  <!-- Toast Notification -->
+  <div id="toastNotification" class="fixed bottom-5 left-5 z-50 hidden px-4 py-3 rounded-xl shadow-2xl text-xs font-bold flex items-center gap-2 transition-all duration-300"></div>
+
+  <!-- Application Shell -->
+  <div id="app" class="flex-grow flex flex-col">
+    <!-- Auth Screen -->
+    <div id="authScreen" class="flex-grow flex items-center justify-center p-4">
+      <div class="card-bg p-8 rounded-2xl shadow-2xl w-full max-w-md border border-slate-700 relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-2 h-full gold-gradient"></div>
+        <div class="text-center mb-8">
+          <div class="w-20 h-20 gold-gradient rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+            <i class="fa-solid fa-graduation-cap text-3xl text-slate-900"></i>
+          </div>
+          <h1 class="text-2xl font-bold text-white mb-1">منصة MR</h1>
+          <p class="text-slate-400 text-sm">نظام إدارة الطلاب والمدفوعات</p>
+        </div>
+
+        <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-300 mb-1">البريد الإلكتروني / اسم المستخدم</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400">
+                <i class="fa-solid fa-envelope"></i>
+              </span>
+              <input type="text" id="loginEmail" required placeholder="mr@gmail.com" class="w-full pr-10 pl-3 py-2.5 rounded-xl input-style text-sm">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-300 mb-1">كلمة المرور</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400">
+                <i class="fa-solid fa-lock"></i>
+              </span>
+              <input type="password" id="loginPassword" required placeholder="••••••••" class="w-full pr-10 pl-3 py-2.5 rounded-xl input-style text-sm">
+            </div>
+          </div>
+
+          <div id="authError" class="hidden text-red-400 text-xs text-center bg-red-950/50 p-2 rounded-lg border border-red-800">
+            بيانات الدخول غير صحيحة، يرجى التأكد وإعادة المحاولة.
+          </div>
+
+          <button type="submit" class="w-full py-3 rounded-xl gold-gradient font-bold text-slate-900 hover:opacity-90 transition">
+            تسجيل الدخول
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div id="dashboardScreen" class="hidden flex-grow flex flex-col">
+      <!-- Navbar -->
+      <header class="card-bg border-b border-slate-700 sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <div class="flex items-center space-x-3 space-x-reverse">
+            <div class="w-10 h-10 gold-gradient rounded-xl flex items-center justify-center text-slate-900 font-bold">
+              <i class="fa-solid fa-user-tie"></i>
+            </div>
+            <div>
+              <h2 class="font-bold text-base leading-tight">MR</h2>
+              <span id="syncStatusText" class="text-[11px] text-emerald-400 flex items-center gap-1">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span> متصل بالسحاب
+              </span>
+            </div>
+          </div>
+
+          <div class="flex items-center space-x-2 space-x-reverse">
+            <button onclick="loadStudents(true)" id="syncBtn" title="مزامنة فورية" class="bg-slate-800 hover:bg-slate-700 text-amber-400 px-3 py-2 rounded-xl text-sm border border-slate-700 transition flex items-center space-x-1 space-x-reverse">
+              <i class="fa-solid fa-rotate" id="syncIcon"></i>
+              <span class="hidden sm:inline">مزامنة</span>
+            </button>
+            <button onclick="openAddStudentModal()" class="gold-gradient text-slate-900 px-4 py-2 rounded-xl font-bold text-sm hover:opacity-90 transition flex items-center space-x-2 space-x-reverse">
+              <i class="fa-solid fa-plus"></i>
+              <span>إضافة طالب</span>
+            </button>
+            <button onclick="handleLogout()" title="تسجيل الخروج" class="bg-slate-800 text-slate-300 hover:text-red-400 px-3 py-2 rounded-xl text-sm border border-slate-700 transition">
+              <i class="fa-solid fa-right-from-bracket"></i>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- Main Content Container -->
+      <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow w-full space-y-6">
+        
+        <!-- Grades Tabs Selector -->
+        <div class="flex items-center space-x-2 space-x-reverse overflow-x-auto pb-2 border-b border-slate-800">
+          <button onclick="selectGrade('1_prep')" id="tab_1_prep" class="grade-tab px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition bg-slate-800 text-slate-300 hover:bg-slate-700">الأول الإعدادي</button>
+          <button onclick="selectGrade('2_prep')" id="tab_2_prep" class="grade-tab px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition bg-slate-800 text-slate-300 hover:bg-slate-700">الثاني الإعدادي</button>
+          <button onclick="selectGrade('3_prep')" id="tab_3_prep" class="grade-tab px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition bg-slate-800 text-slate-300 hover:bg-slate-700">الثالث الإعدادي</button>
+          <button onclick="selectGrade('1_sec')" id="tab_1_sec" class="grade-tab px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition bg-slate-800 text-slate-300 hover:bg-slate-700">الأول الثانوي</button>
+          <button onclick="selectGrade('2_sec')" id="tab_2_sec" class="grade-tab px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition bg-slate-800 text-slate-300 hover:bg-slate-700">الثاني الثانوي</button>
+          <button onclick="selectGrade('bac')" id="tab_bac" class="grade-tab px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition bg-slate-800 text-slate-300 hover:bg-slate-700">صف البكالوريا</button>
+        </div>
+
+        <!-- Financial Summary Banner -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="card-bg p-4 rounded-2xl border-r-4 border-amber-500 flex items-center justify-between">
+            <div>
+              <span class="text-xs text-slate-400 block font-medium">مجموع مدفوعات الصف الحالي</span>
+              <span id="gradeTotalAmount" class="text-xl font-bold text-amber-400">0 ج.م</span>
+            </div>
+            <i class="fa-solid fa-wallet text-2xl text-slate-700"></i>
+          </div>
+
+          <div class="card-bg p-4 rounded-2xl border-r-4 border-emerald-500 flex items-center justify-between">
+            <div>
+              <span class="text-xs text-slate-400 block font-medium">إجمالي تحصيل كل الصفوف</span>
+              <span id="allGradesTotalAmount" class="text-xl font-bold text-emerald-400">0 ج.م</span>
+            </div>
+            <i class="fa-solid fa-coins text-2xl text-slate-700"></i>
+          </div>
+        </div>
+
+        <!-- Controls Bar -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="md:col-span-2 relative">
+            <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400">
+              <i class="fa-solid fa-magnifying-glass"></i>
+            </span>
+            <input type="text" id="searchInput" oninput="renderStudents()" placeholder="ابحث باسم الطالب..." class="w-full pr-10 pl-4 py-3 rounded-xl input-style text-sm">
+          </div>
+
+          <button onclick="openReportModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl text-sm transition flex items-center justify-center space-x-2 space-x-reverse shadow-lg">
+            <i class="fa-solid fa-chart-pie"></i>
+            <span>تقرير آخر الشهر والشهور المستحقة</span>
+          </button>
+        </div>
+
+        <!-- Students List Header -->
+        <div class="flex items-center justify-between">
+          <h3 class="text-lg font-bold text-slate-200 flex items-center space-x-2 space-x-reverse">
+            <span id="currentGradeTitle">الأول الإعدادي</span>
+            <span id="studentCountBadge" class="bg-slate-800 text-amber-400 text-xs px-2.5 py-1 rounded-full border border-slate-700">0 طالب</span>
+          </h3>
+        </div>
+
+        <!-- Students Cards Grid (Names Only) -->
+        <div id="studentsGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3"></div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="hidden text-center py-12 card-bg rounded-2xl">
+          <i class="fa-solid fa-user-slash text-4xl text-slate-600 mb-3"></i>
+          <p class="text-slate-400 text-sm">لا يوجد طلاب مسجلين في هذا الصف حتى الآن.</p>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <footer class="py-4 border-t border-slate-800 text-center text-xs text-slate-400 tracking-wider">
+    Created by Omar Hadwa | الدعم الفني 01013587867
+  </footer>
+
+  <!-- Modal: Student Profile -->
+  <div id="profileModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+    <div class="card-bg rounded-2xl max-w-2xl w-full p-6 space-y-5 border border-slate-700 shadow-2xl max-h-[90vh] flex flex-col">
+      <div class="flex items-center justify-between border-b border-slate-700 pb-3 flex-shrink-0">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-id-card text-amber-400 text-lg"></i>
+          <h3 class="font-bold text-slate-100 text-base">بيانات وملف الطالب</h3>
+        </div>
+        <div class="flex items-center gap-3">
+          <button id="profDeleteBtn" class="text-slate-400 hover:text-red-400 text-sm transition" title="حذف الطالب">
+            <i class="fa-solid fa-trash-can"></i>
+          </button>
+          <button onclick="closeProfileModal()" class="text-slate-400 hover:text-white text-lg">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="flex-grow overflow-y-auto space-y-5 pr-1">
+        <div class="bg-slate-900/70 p-4 rounded-xl border border-slate-800 space-y-3">
+          <div class="flex justify-between items-start">
+            <div>
+              <h2 id="profStudentName" class="text-lg font-bold text-white"></h2>
+              <p id="profStudentGroup" class="text-xs text-amber-400 mt-0.5"></p>
+            </div>
+            <span id="profGradeBadge" class="text-xs px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700"></span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 text-xs text-slate-300 border-t border-slate-800">
+            <div class="flex items-center justify-between bg-slate-950/50 p-2 rounded-lg">
+              <span><i class="fa-solid fa-phone text-slate-500 ml-1"></i> ولي الأمر: <strong id="profParentPhone" class="text-white"></strong></span>
+              <a id="profWhatsappLink" href="#" target="_blank" class="text-emerald-400 hover:text-emerald-300 text-base"><i class="fa-brands fa-whatsapp"></i></a>
+            </div>
+            <div class="flex items-center bg-slate-950/50 p-2 rounded-lg">
+              <span><i class="fa-solid fa-mobile-screen text-slate-500 ml-1"></i> الطالب: <strong id="profStudentPhone" class="text-white"></strong></span>
+            </div>
+            <div class="flex items-center bg-slate-950/50 p-2 rounded-lg sm:col-span-2">
+              <span><i class="fa-solid fa-money-bill-wave text-slate-500 ml-1"></i> قيمة الاشتراك الشهري: <strong id="profFee" class="text-amber-400"></strong></span>
+            </div>
+          </div>
+
+          <button id="profAttendanceBtn" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 transition shadow-md">
+            <i class="fa-solid fa-clipboard-check text-sm"></i>
+            <span>تسجيل حضور / غياب ودرجة تسميع</span>
+          </button>
+        </div>
+
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <h4 class="font-bold text-indigo-400 text-xs flex items-center gap-1.5">
+              <i class="fa-solid fa-clock-rotate-left"></i> سجل الحضور والتسميع
+            </h4>
+            <span id="profAttendanceRatio" class="text-[11px] font-bold text-slate-400"></span>
+          </div>
+          <div id="profAttendanceList" class="space-y-1.5 max-h-40 overflow-y-auto"></div>
+        </div>
+
+        <div class="space-y-2">
+          <h4 class="font-bold text-emerald-400 text-xs flex items-center gap-1.5">
+            <i class="fa-solid fa-money-check-dollar"></i> المدفوعات الشهرية (اضغط على الشهر لتسجيل الدفع)
+          </h4>
+          <div id="profPaymentsList" class="grid grid-cols-2 sm:grid-cols-4 gap-2"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Attendance & Quiz -->
+  <div id="attendanceModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+    <div class="card-bg rounded-2xl max-w-md w-full p-6 space-y-4 border border-slate-700 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-700 pb-3">
+        <h3 class="font-bold text-slate-100 flex items-center gap-2">
+          <i class="fa-solid fa-clipboard-user text-amber-400"></i> تسجيل حضور وتسميع
+        </h3>
+        <button onclick="closeAttendanceModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <form id="attendanceForm" onsubmit="handleAttendanceSubmit(event)" class="space-y-4">
+        <input type="hidden" id="attStudentId">
+        
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1">اسم الطالب</label>
+          <input type="text" id="attStudentName" disabled class="w-full p-2.5 rounded-xl bg-slate-900 text-slate-400 border border-slate-800 text-sm">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">حالة الحضور</label>
+            <select id="attStatus" class="w-full p-2.5 rounded-xl input-style text-sm">
+              <option value="present">حاضر ✓</option>
+              <option value="absent">غائب ✗</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">درجة التسميع</label>
+            <input type="text" id="attQuizGrade" class="w-full p-2.5 rounded-xl input-style text-sm" placeholder="مثال: 10/10">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1">تاريخ الحصة</label>
+          <input type="date" id="attDate" required class="w-full p-2.5 rounded-xl input-style text-sm">
+        </div>
+
+        <div class="pt-2 flex justify-end space-x-2 space-x-reverse">
+          <button type="button" onclick="closeAttendanceModal()" class="px-4 py-2 bg-slate-800 text-slate-300 text-xs font-bold rounded-xl hover:bg-slate-700">إلغاء</button>
+          <button type="submit" class="px-5 py-2 gold-gradient text-slate-900 text-xs font-bold rounded-xl hover:opacity-90">حفظ السجل</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Add Student -->
+  <div id="addStudentModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+    <div class="card-bg rounded-2xl max-w-lg w-full p-6 space-y-4 border border-slate-700">
+      <div class="flex items-center justify-between border-b border-slate-700 pb-3">
+        <h3 class="font-bold text-slate-100">إضافة طالب جديد</h3>
+        <button onclick="closeAddStudentModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <form id="addStudentForm" onsubmit="handleAddStudent(event)" class="space-y-3">
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1">اسم الطالب ثلاثي *</label>
+          <input type="text" id="newStudentName" required class="w-full p-2.5 rounded-xl input-style text-sm" placeholder="أدخل اسم الطالب">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">رقم ولي الأمر *</label>
+            <input type="tel" id="newParentPhone" required class="w-full p-2.5 rounded-xl input-style text-sm" placeholder="01XXXXXXXXX">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">رقم هاتف الطالب</label>
+            <input type="tel" id="newStudentPhone" class="w-full p-2.5 rounded-xl input-style text-sm" placeholder="اختياري">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">الصف الدراسي</label>
+            <select id="newStudentGrade" class="w-full p-2.5 rounded-xl input-style text-sm">
+              <option value="1_prep">الأول الإعدادي</option>
+              <option value="2_prep">الثاني الإعدادي</option>
+              <option value="3_prep">الثالث الإعدادي</option>
+              <option value="1_sec">الأول الثانوي</option>
+              <option value="2_sec">الثاني الثانوي</option>
+              <option value="bac">صف البكالوريا</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">المجموعة / الموعد</label>
+            <input type="text" id="newStudentGroup" class="w-full p-2.5 rounded-xl input-style text-sm" placeholder="مثال: السبت 4 عصراً">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1">قيمة الاشتراك الشهري (ج.م)</label>
+          <input type="number" id="newStudentFee" value="150" class="w-full p-2.5 rounded-xl input-style text-sm">
+        </div>
+
+        <div class="pt-2 flex justify-end space-x-2 space-x-reverse">
+          <button type="button" onclick="closeAddStudentModal()" class="px-4 py-2 bg-slate-800 text-slate-300 text-xs font-bold rounded-xl hover:bg-slate-700">إلغاء</button>
+          <button type="submit" class="px-5 py-2 gold-gradient text-slate-900 text-xs font-bold rounded-xl hover:opacity-90">حفظ الطالب فوراً</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Record Payment -->
+  <div id="paymentModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+    <div class="card-bg rounded-2xl max-w-md w-full p-6 space-y-4 border border-slate-700">
+      <div class="flex items-center justify-between border-b border-slate-700 pb-3">
+        <h3 class="font-bold text-slate-100">تسجيل دفع شهر</h3>
+        <button onclick="closePaymentModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <form id="paymentForm" onsubmit="handlePaymentSubmit(event)" class="space-y-3">
+        <input type="hidden" id="payStudentId">
+        
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1">الطالب</label>
+          <input type="text" id="payStudentName" disabled class="w-full p-2.5 rounded-xl bg-slate-900 text-slate-400 border border-slate-800 text-sm">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">اختر الشهر</label>
+            <select id="payMonthSelect" class="w-full p-2.5 rounded-xl input-style text-sm">
+              <option value="1">شهر 1 (يناير)</option>
+              <option value="2">شهر 2 (فبراير)</option>
+              <option value="3">شهر 3 (مارس)</option>
+              <option value="4">شهر 4 (أبريل)</option>
+              <option value="5">شهر 5 (مايو)</option>
+              <option value="6">شهر 6 (يونيو)</option>
+              <option value="7">شهر 7 (يوليو)</option>
+              <option value="8">شهر 8 (أغسطس)</option>
+              <option value="9">شهر 9 (سبتمبر)</option>
+              <option value="10">شهر 10 (أكتوبر)</option>
+              <option value="11">شهر 11 (نوفمبر)</option>
+              <option value="12">شهر 12 (ديسمبر)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">المبلغ المدفوع (ج.م) *</label>
+            <input type="number" id="payAmountInput" required class="w-full p-2.5 rounded-xl input-style text-sm font-bold text-emerald-400" placeholder="150">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1">تاريخ ووقت السداد</label>
+          <input type="datetime-local" id="payTimestamp" required class="w-full p-2.5 rounded-xl input-style text-sm">
+        </div>
+
+        <div class="pt-2 flex justify-end space-x-2 space-x-reverse">
+          <button type="button" onclick="closePaymentModal()" class="px-4 py-2 bg-slate-800 text-slate-300 text-xs font-bold rounded-xl hover:bg-slate-700">إلغاء</button>
+          <button type="submit" class="px-5 py-2 gold-gradient text-slate-900 text-xs font-bold rounded-xl hover:opacity-90">تأكيد الدفع</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Report -->
+  <div id="reportModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+    <div class="card-bg rounded-2xl max-w-3xl w-full p-6 space-y-4 border border-slate-700 max-h-[90vh] flex flex-col">
+      <div class="flex items-center justify-between border-b border-slate-700 pb-3 flex-shrink-0">
+        <h3 class="font-bold text-slate-100 flex items-center space-x-2 space-x-reverse">
+          <i class="fa-solid fa-file-invoice-dollar text-amber-400"></i>
+          <span>تقرير آخر الشهر والتنبيهات المباشرة</span>
+        </h3>
+        <button onclick="closeReportModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-900/60 p-3 rounded-xl border border-slate-800 flex-shrink-0">
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">الشهر المستهدف</label>
+          <select id="reportMonthSelect" onchange="generateReport()" class="w-full p-2 rounded-lg input-style text-xs">
+            <option value="1">شهر 1 (يناير)</option>
+            <option value="2">شهر 2 (فبراير)</option>
+            <option value="3">شهر 3 (مارس)</option>
+            <option value="4">شهر 4 (أبريل)</option>
+            <option value="5">شهر 5 (مايو)</option>
+            <option value="6">شهر 6 (يونيو)</option>
+            <option value="7">شهر 7 (يوليو)</option>
+            <option value="8">شهر 8 (أغسطس)</option>
+            <option value="9">شهر 9 (سبتمبر)</option>
+            <option value="10" selected>شهر 10 (أكتوبر)</option>
+            <option value="11">شهر 11 (نوفمبر)</option>
+            <option value="12">شهر 12 (ديسمبر)</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">عرض التقرير لـ</label>
+          <select id="reportScopeSelect" onchange="generateReport()" class="w-full p-2 rounded-lg input-style text-xs">
+            <option value="current">الصف الحالي فقط</option>
+            <option value="all">جميع الصفوف الدراسية</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="flex-grow overflow-y-auto space-y-4 pr-1">
+        <div>
+          <h4 class="font-bold text-red-400 text-sm mb-2 flex items-center space-x-2 space-x-reverse">
+            <i class="fa-solid fa-circle-exclamation"></i>
+            <span>الطلاب الذين لم يدفعوا حتى الآن (<span id="unpaidCount">0</span>)</span>
+          </h4>
+          <div id="unpaidList" class="space-y-2"></div>
+        </div>
+
+        <hr class="border-slate-800">
+
+        <div>
+          <h4 class="font-bold text-emerald-400 text-sm mb-2 flex items-center space-x-2 space-x-reverse">
+            <i class="fa-solid fa-circle-check"></i>
+            <span>الطلاب الذين قاموا بالدفع (<span id="paidCount">0</span>)</span>
+          </h4>
+          <div id="paidList" class="space-y-2"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // بيانات الاتصال بمشروع Supabase الجديد
+    const SUPABASE_URL = 'https://fweojqmgnhzzrhkfravc.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_QBFQt4U2sFengOCNBG5QcA_lB0VaDUW';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let currentGrade = '1_prep';
+    let studentsData = [];
+    let activeProfileStudentId = null;
+
+    const gradeNames = {
+      '1_prep': 'الأول الإعدادي',
+      '2_prep': 'الثاني الإعدادي',
+      '3_prep': 'الثالث الإعدادي',
+      '1_sec': 'الأول الثانوي',
+      '2_sec': 'الثاني الثانوي',
+      'bac': 'صف البكالوريا'
+    };
+
+    window.addEventListener('DOMContentLoaded', () => {
+      checkAuthStatus();
+    });
+
+    function showToast(message, type = 'success') {
+      const toast = document.getElementById('toastNotification');
+      toast.textContent = message;
+      toast.className = `fixed bottom-5 left-5 z-50 px-4 py-3 rounded-xl shadow-2xl text-xs font-bold flex items-center gap-2 transition-all duration-300 ${
+        type === 'error' ? 'bg-red-900 text-red-100 border border-red-700' : 'bg-emerald-900 text-emerald-100 border border-emerald-700'
+      }`;
+      toast.classList.remove('hidden');
+      setTimeout(() => {
+        toast.classList.add('hidden');
+      }, 4000);
+    }
+
+    function checkAuthStatus() {
+      if (localStorage.getItem('mr_teacher_logged') === 'true') {
+        showDashboard();
+      } else {
+        showAuth();
+      }
+    }
+
+    function showAuth() {
+      document.getElementById('authScreen').classList.remove('hidden');
+      document.getElementById('dashboardScreen').classList.add('hidden');
+    }
+
+    function showDashboard() {
+      document.getElementById('authScreen').classList.add('hidden');
+      document.getElementById('dashboardScreen').classList.remove('hidden');
+      
+      const local = localStorage.getItem('mr_students_backup');
+      if (local) {
+        try {
+          studentsData = JSON.parse(local);
+          renderStudents();
+        } catch (e) {}
+      }
+      
+      selectGrade('1_prep');
+      loadStudents();
+      setupRealtime();
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const email = document.getElementById('loginEmail').value.trim();
+      const password = document.getElementById('loginPassword').value.trim();
+      
+      if (email === 'mr@gmail.com' && password === 'mora#70007#') {
+        localStorage.setItem('mr_teacher_logged', 'true');
+        showDashboard();
+      } else {
+        document.getElementById('authError').classList.remove('hidden');
+      }
+    }
+
+    function handleLogout() {
+      localStorage.removeItem('mr_teacher_logged');
+      showAuth();
+    }
+
+    async function loadStudents(manual = false) {
+      const syncIcon = document.getElementById('syncIcon');
+      const statusText = document.getElementById('syncStatusText');
+      if (manual && syncIcon) syncIcon.classList.add('fa-spin');
+
+      try {
+        const { data, error } = await supabaseClient.from('students').select('*');
+        if (error) {
+          console.error('Supabase fetch error:', error);
+          statusText.innerHTML = `<span class="w-2 h-2 rounded-full bg-red-500 inline-block"></span> خطأ في الصلاحيات (RLS)`;
+          statusText.className = "text-[11px] text-red-400 flex items-center gap-1";
+          if (manual) showToast('تعذر الاتصال بالسيرفر: تأكد من تعطيل RLS في Supabase', 'error');
+        } else if (data) {
+          studentsData = data;
+          localStorage.setItem('mr_students_backup', JSON.stringify(studentsData));
+          renderStudents();
+          if (activeProfileStudentId) {
+            renderProfileContent(activeProfileStudentId);
+          }
+          statusText.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span> متصل بالسحاب`;
+          statusText.className = "text-[11px] text-emerald-400 flex items-center gap-1";
+          if (manual) showToast('تمت المزامنة مع السحابة بنجاح ✓');
+        }
+      } catch (e) {
+        if (manual) showToast('لا يوجد اتصال بالإنترنت، يتم العرض محلياً', 'error');
+      } finally {
+        if (manual && syncIcon) syncIcon.classList.remove('fa-spin');
+      }
+    }
+
+    function setupRealtime() {
+      supabaseClient
+        .channel('students-realtime-channel')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'students' }, () => {
+          loadStudents(false);
+        })
+        .subscribe();
+    }
+
+    async function saveStudentToSupabase(student) {
+      localStorage.setItem('mr_students_backup', JSON.stringify(studentsData));
+      try {
+        const { error } = await supabaseClient.from('students').upsert(student);
+        if (error) {
+          console.error('Supabase upsert error:', error);
+          showToast('تم الحفظ محلياً: عطل RLS في Supabase للمزامنة السحابية', 'error');
+        } else {
+          showToast('تم الحفظ والمزامنة مع السحابة ✓');
+        }
+      } catch (e) {
+        showToast('تم الحفظ محلياً (أوفلاين)', 'error');
+      }
+    }
+
+    function selectGrade(gradeKey) {
+      currentGrade = gradeKey;
+      document.querySelectorAll('.grade-tab').forEach(tab => {
+        tab.classList.remove('gold-gradient', 'text-slate-900');
+        tab.classList.add('bg-slate-800', 'text-slate-300');
+      });
+      const activeTab = document.getElementById(`tab_${gradeKey}`);
+      if (activeTab) {
+        activeTab.classList.remove('bg-slate-800', 'text-slate-300');
+        activeTab.classList.add('gold-gradient', 'text-slate-900');
+      }
+
+      document.getElementById('currentGradeTitle').textContent = gradeNames[gradeKey];
+      renderStudents();
+    }
+
+    function calculateFinancials() {
+      let currentGradeSum = 0;
+      let totalAllGradesSum = 0;
+
+      studentsData.forEach(s => {
+        const payments = s.payments || {};
+        let studentTotalPaid = 0;
+
+        Object.values(payments).forEach(p => {
+          if (p && p.is_paid) {
+            const amount = Number(p.amount) || Number(s.fee) || 150;
+            studentTotalPaid += amount;
+          }
+        });
+
+        totalAllGradesSum += studentTotalPaid;
+        if (s.grade === currentGrade) {
+          currentGradeSum += studentTotalPaid;
+        }
+      });
+
+      document.getElementById('gradeTotalAmount').textContent = `${currentGradeSum.toLocaleString()} ج.م`;
+      document.getElementById('allGradesTotalAmount').textContent = `${totalAllGradesSum.toLocaleString()} ج.م`;
+    }
+
+    function renderStudents() {
+      const grid = document.getElementById('studentsGrid');
+      const emptyState = document.getElementById('emptyState');
+      const search = document.getElementById('searchInput').value.trim().toLowerCase();
+
+      grid.innerHTML = '';
+      calculateFinancials();
+
+      const filtered = studentsData.filter(s => {
+        const matchesGrade = s.grade === currentGrade;
+        const matchesSearch = !search || s.name.toLowerCase().includes(search);
+        return matchesGrade && matchesSearch;
+      });
+
+      document.getElementById('studentCountBadge').textContent = `${filtered.length} طالب`;
+
+      if (filtered.length === 0) {
+        emptyState.classList.remove('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+
+      filtered.forEach(s => {
+        const card = document.createElement('div');
+        card.className = 'card-bg rounded-xl p-4 border border-slate-700/80 hover:border-amber-500 transition cursor-pointer flex items-center justify-between shadow-sm group';
+        card.onclick = () => openProfileModal(s.id);
+        card.innerHTML = `
+          <div class="flex items-center space-x-3 space-x-reverse truncate">
+            <div class="w-9 h-9 rounded-lg bg-slate-900 border border-slate-700 flex items-center justify-center text-amber-400 group-hover:bg-amber-500 group-hover:text-slate-900 transition flex-shrink-0">
+              <i class="fa-solid fa-user-graduate text-sm"></i>
+            </div>
+            <h4 class="font-bold text-white text-sm truncate group-hover:text-amber-400 transition">${s.name}</h4>
+          </div>
+          <i class="fa-solid fa-chevron-left text-xs text-slate-500 group-hover:text-amber-400 transition"></i>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function openProfileModal(studentId) {
+      activeProfileStudentId = studentId;
+      renderProfileContent(studentId);
+      document.getElementById('profileModal').classList.remove('hidden');
+    }
+
+    function renderProfileContent(studentId) {
+      const s = studentsData.find(x => x.id === studentId);
+      if (!s) return;
+
+      document.getElementById('profStudentName').textContent = s.name;
+      document.getElementById('profStudentGroup').textContent = s.group_name || 'بدون مجموعة محددة';
+      document.getElementById('profGradeBadge').textContent = gradeNames[s.grade];
+      document.getElementById('profParentPhone').textContent = s.parent_phone;
+      document.getElementById('profStudentPhone').textContent = s.student_phone || 'غير مسجل';
+      document.getElementById('profFee').textContent = `${s.fee || 150} ج.م`;
+      document.getElementById('profWhatsappLink').href = `https://wa.me/2${s.parent_phone}`;
+
+      document.getElementById('profDeleteBtn').onclick = () => deleteStudent(s.id);
+      document.getElementById('profAttendanceBtn').onclick = () => openAttendanceModal(s.id);
+
+      const attList = document.getElementById('profAttendanceList');
+      const attendance = s.attendance || [];
+      const presentCount = attendance.filter(a => a.status === 'present').length;
+      const ratio = attendance.length > 0 ? Math.round((presentCount / attendance.length) * 100) : 100;
+      document.getElementById('profAttendanceRatio').textContent = `نسبة الحضور: ${ratio}% (${presentCount}/${attendance.length})`;
+
+      attList.innerHTML = '';
+      if (attendance.length === 0) {
+        attList.innerHTML = '<p class="text-xs text-slate-500 italic bg-slate-900/40 p-2.5 rounded-lg">لا توجد حصص مسجلة لهذا الطالب بعد.</p>';
+      } else {
+        attendance.slice().reverse().forEach((att, idx) => {
+          const realIdx = attendance.length - 1 - idx;
+          const div = document.createElement('div');
+          div.className = 'flex items-center justify-between bg-slate-900/70 px-3 py-2 rounded-lg border border-slate-800 text-xs';
+          div.innerHTML = `
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full ${att.status === 'present' ? 'bg-emerald-500' : 'bg-red-500'}"></span>
+              <span class="font-bold ${att.status === 'present' ? 'text-emerald-400' : 'text-red-400'}">${att.status === 'present' ? 'حاضر' : 'غائب'}</span>
+              <span class="text-slate-400 text-[11px]">(${att.date})</span>
+            </div>
+            <div class="flex items-center gap-2">
+              ${att.quiz ? `<span class="bg-indigo-950 text-indigo-300 px-2 py-0.5 rounded border border-indigo-800/60 font-bold">التسميع: ${att.quiz}</span>` : '<span class="text-slate-600 text-[10px]">بدون تسميع</span>'}
+              <button onclick="deleteAttendanceRecord('${s.id}', ${realIdx})" class="text-slate-600 hover:text-red-400 transition" title="حذف السجل"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+          `;
+          attList.appendChild(div);
+        });
+      }
+
+      const payList = document.getElementById('profPaymentsList');
+      payList.innerHTML = '';
+      const payments = s.payments || {};
+
+      for (let m = 1; m <= 12; m++) {
+        const paid = payments[m];
+        const isPaid = paid && paid.is_paid;
+        const paidAmount = isPaid ? (paid.amount || s.fee || 150) : '';
+
+        const btn = document.createElement('button');
+        btn.className = `p-2.5 rounded-xl border text-xs text-center flex flex-col items-center justify-center transition ${
+          isPaid 
+            ? 'bg-emerald-950/70 border-emerald-500 text-emerald-300 hover:bg-emerald-900/50' 
+            : 'bg-slate-900/70 border-slate-700 text-slate-300 hover:border-amber-500'
+        }`;
+        btn.onclick = () => openPaymentModal(s.id, m);
+        btn.innerHTML = `
+          <span class="font-bold text-sm">شهر ${m}</span>
+          <span class="text-[10px] mt-1 ${isPaid ? 'text-emerald-400 font-bold' : 'text-amber-400'}">
+            ${isPaid ? `مدفوع (${paidAmount} ج)` : 'اضغط للدفع +'}
+          </span>
+        `;
+        payList.appendChild(btn);
+      }
+    }
+
+    function closeProfileModal() {
+      activeProfileStudentId = null;
+      document.getElementById('profileModal').classList.add('hidden');
+    }
+
+    function openAttendanceModal(studentId) {
+      const student = studentsData.find(s => s.id === studentId);
+      if (!student) return;
+
+      document.getElementById('attStudentId').value = studentId;
+      document.getElementById('attStudentName').value = student.name;
+      document.getElementById('attStatus').value = 'present';
+      document.getElementById('attQuizGrade').value = '';
+      document.getElementById('attDate').value = new Date().toISOString().split('T')[0];
+
+      document.getElementById('attendanceModal').classList.remove('hidden');
+    }
+
+    function closeAttendanceModal() {
+      document.getElementById('attendanceModal').classList.add('hidden');
+    }
+
+    async function handleAttendanceSubmit(e) {
+      e.preventDefault();
+      const studentId = document.getElementById('attStudentId').value;
+      const status = document.getElementById('attStatus').value;
+      const quiz = document.getElementById('attQuizGrade').value.trim();
+      const date = document.getElementById('attDate').value;
+
+      const student = studentsData.find(s => s.id === studentId);
+      if (student) {
+        if (!student.attendance) student.attendance = [];
+        student.attendance.push({
+          status,
+          quiz: quiz || null,
+          date
+        });
+
+        closeAttendanceModal();
+        renderProfileContent(student.id);
+        await saveStudentToSupabase(student);
+      }
+    }
+
+    async function deleteAttendanceRecord(studentId, index) {
+      const student = studentsData.find(s => s.id === studentId);
+      if (student && student.attendance) {
+        student.attendance.splice(index, 1);
+        renderProfileContent(student.id);
+        await saveStudentToSupabase(student);
+      }
+    }
+
+    function openAddStudentModal() {
+      document.getElementById('newStudentGrade').value = currentGrade;
+      document.getElementById('addStudentModal').classList.remove('hidden');
+    }
+
+    function closeAddStudentModal() {
+      document.getElementById('addStudentModal').classList.add('hidden');
+    }
+
+    async function handleAddStudent(e) {
+      e.preventDefault();
+      const newStudent = {
+        id: 'st_' + Date.now(),
+        name: document.getElementById('newStudentName').value.trim(),
+        parent_phone: document.getElementById('newParentPhone').value.trim(),
+        student_phone: document.getElementById('newStudentPhone').value.trim(),
+        grade: document.getElementById('newStudentGrade').value,
+        group_name: document.getElementById('newStudentGroup').value.trim(),
+        fee: Number(document.getElementById('newStudentFee').value) || 150,
+        payments: {},
+        attendance: []
+      };
+
+      studentsData.push(newStudent);
+      renderStudents();
+      closeAddStudentModal();
+      document.getElementById('addStudentForm').reset();
+
+      await saveStudentToSupabase(newStudent);
+    }
+
+    async function deleteStudent(id) {
+      if (confirm('هل أنت متأكد من حذف هذا الطالب نهائياً؟')) {
+        studentsData = studentsData.filter(s => s.id !== id);
+        closeProfileModal();
+        renderStudents();
+        localStorage.setItem('mr_students_backup', JSON.stringify(studentsData));
+        try {
+          await supabaseClient.from('students').delete().eq('id', id);
+          showToast('تم حذف الطالب بنجاح');
+        } catch (e) {}
+      }
+    }
+
+    function openPaymentModal(studentId, month) {
+      const student = studentsData.find(s => s.id === studentId);
+      if (!student) return;
+
+      document.getElementById('payStudentId').value = studentId;
+      document.getElementById('payStudentName').value = student.name;
+      document.getElementById('payMonthSelect').value = month;
+
+      const existingPayment = student.payments && student.payments[month];
+      document.getElementById('payAmountInput').value = existingPayment ? (existingPayment.amount || student.fee || 150) : (student.fee || 150);
+
+      const now = new Date();
+      now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+      document.getElementById('payTimestamp').value = now.toISOString().slice(0, 16);
+
+      document.getElementById('paymentModal').classList.remove('hidden');
+    }
+
+    function closePaymentModal() {
+      document.getElementById('paymentModal').classList.add('hidden');
+    }
+
+    async function handlePaymentSubmit(e) {
+      e.preventDefault();
+      const studentId = document.getElementById('payStudentId').value;
+      const month = document.getElementById('payMonthSelect').value;
+      const timestamp = document.getElementById('payTimestamp').value;
+      const amountPaid = Number(document.getElementById('payAmountInput').value) || 0;
+
+      const student = studentsData.find(s => s.id === studentId);
+      if (student) {
+        if (!student.payments) student.payments = {};
+        student.payments[month] = {
+          is_paid: true,
+          amount: amountPaid,
+          date: timestamp
+        };
+
+        closePaymentModal();
+        calculateFinancials();
+        if (activeProfileStudentId === student.id) {
+          renderProfileContent(student.id);
+        }
+
+        await saveStudentToSupabase(student);
+      }
+    }
+
+    function openReportModal() {
+      generateReport();
+      document.getElementById('reportModal').classList.remove('hidden');
+    }
+
+    function closeReportModal() {
+      document.getElementById('reportModal').classList.add('hidden');
+    }
+
+    function generateReport() {
+      const month = document.getElementById('reportMonthSelect').value;
+      const scope = document.getElementById('reportScopeSelect').value;
+
+      const filtered = studentsData.filter(s => scope === 'all' || s.grade === currentGrade);
+      const paidList = [];
+      const unpaidList = [];
+
+      filtered.forEach(s => {
+        const payments = s.payments || {};
+        const isPaid = payments[month] && payments[month].is_paid;
+
+        if (isPaid) {
+          paidList.push(s);
+        } else {
+          const unpaidMonths = [];
+          for (let m = 1; m <= month; m++) {
+            if (!payments[m] || !payments[m].is_paid) {
+              unpaidMonths.push(m);
+            }
+          }
+          unpaidList.push({ student: s, unpaidMonths });
+        }
+      });
+
+      document.getElementById('paidCount').textContent = paidList.length;
+      document.getElementById('unpaidCount').textContent = unpaidList.length;
+
+      const unpaidContainer = document.getElementById('unpaidList');
+      unpaidContainer.innerHTML = '';
+      if (unpaidList.length === 0) {
+        unpaidContainer.innerHTML = '<p class="text-xs text-slate-500 italic py-2">لا يوجد طلاب متأخرين عن هذا الشهر 🎉</p>';
+      } else {
+        unpaidList.forEach(item => {
+          const s = item.student;
+          const monthsText = item.unpaidMonths.join(' و ');
+          const message = encodeURIComponent(`السلام عليكم ورحمة الله وبركاته، تحية طيبة لولي أمر الطالب (${s.name}) مع منصة MR. نود تذكيركم بضرورة سداد المصروفات المتبقية عن شهر (${monthsText}). شاكرين تعاونكم.`);
+          
+          const div = document.createElement('div');
+          div.className = 'flex items-center justify-between card-bg p-3 rounded-xl border border-red-900/40 text-xs';
+          div.innerHTML = `
+            <div>
+              <div class="font-bold text-slate-100">${s.name} <span class="text-[10px] text-slate-400">(${gradeNames[s.grade]})</span></div>
+              <div class="text-red-400 mt-0.5">الشهور المستحقة عليه: <strong>شهر ${monthsText}</strong></div>
+              <div class="text-slate-400 text-[11px]">ولي الأمر: ${s.parent_phone}</div>
+            </div>
+            <a href="https://wa.me/2${s.parent_phone}?text=${message}" target="_blank" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded-lg flex items-center space-x-1 space-x-reverse transition">
+              <i class="fa-brands fa-whatsapp"></i>
+              <span>تنبيه واتساب</span>
+            </a>
+          `;
+          unpaidContainer.appendChild(div);
+        });
+      }
+
+      const paidContainer = document.getElementById('paidList');
+      paidContainer.innerHTML = '';
+      if (paidList.length === 0) {
+        paidContainer.innerHTML = '<p class="text-xs text-slate-500 italic py-2">لم يقم أي طالب بالسداد لهذا الشهر بعد.</p>';
+      } else {
+        paidList.forEach(s => {
+          const payInfo = s.payments[month];
+          const payDate = new Date(payInfo.date).toLocaleString('ar-EG', {month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'});
+          const paidAmount = payInfo.amount || s.fee || 150;
+
+          const div = document.createElement('div');
+          div.className = 'flex items-center justify-between card-bg p-3 rounded-xl border border-emerald-900/40 text-xs';
+          div.innerHTML = `
+            <div>
+              <div class="font-bold text-slate-100">${s.name} <span class="text-[10px] text-slate-400">(${gradeNames[s.grade]})</span></div>
+              <div class="text-emerald-400 mt-0.5">سدد مبلغ: <strong>${paidAmount} ج.م</strong> بتاريخ: ${payDate}</div>
+            </div>
+            <span class="text-emerald-400 bg-emerald-950/80 px-2.5 py-1 rounded-full border border-emerald-800/50">تم الدفع ✓</span>
+          `;
+          paidContainer.appendChild(div);
+        });
+      }
+    }
+  </script>
+</body>
+</html>
