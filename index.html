@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0f172a">
   <title>تطبيق MR - إدارة الطلاب والمدفوعات</title>
+  <link rel="manifest" href="./manifest.json">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -114,7 +116,7 @@
           </div>
 
           <div class="flex items-center space-x-2 space-x-reverse">
-            <button onclick="loadStudents(true)" id="syncBtn" title="مزامنة فورية" class="bg-slate-800 hover:bg-slate-700 text-amber-400 px-3 py-2 rounded-xl text-sm border border-slate-700 transition flex items-center space-x-1 space-x-reverse">
+            <button onclick="processOfflineQueue(true)" id="syncBtn" title="مزامنة فورية" class="bg-slate-800 hover:bg-slate-700 text-amber-400 px-3 py-2 rounded-xl text-sm border border-slate-700 transition flex items-center space-x-1 space-x-reverse">
               <i class="fa-solid fa-rotate" id="syncIcon"></i>
               <span class="hidden sm:inline">مزامنة</span>
             </button>
@@ -184,7 +186,7 @@
           </h3>
         </div>
 
-        <!-- Students Cards Grid (Names Only) -->
+        <!-- Students Cards Grid -->
         <div id="studentsGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3"></div>
 
         <!-- Empty State -->
@@ -484,7 +486,15 @@
   </div>
 
   <script>
-    // بيانات الاتصال بمشروع Supabase الجديد
+    // تسجيل Service Worker للعمل بدون إنترنت (Offline Support)
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(() => console.log('Service Worker Registered for Offline Use'))
+          .catch((err) => console.error('SW Registration Failed:', err));
+      });
+    }
+
     const SUPABASE_URL = 'https://fweojqmgnhzzrhkfravc.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_QBFQt4U2sFengOCNBG5QcA_lB0VaDUW';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -503,14 +513,40 @@
     };
 
     window.addEventListener('DOMContentLoaded', () => {
+      updateConnectionBadge();
       checkAuthStatus();
     });
+
+    // مراقبة حالة الإنترنت وتفريغ طابور المزامنة تلقائياً
+    window.addEventListener('online', () => {
+      updateConnectionBadge();
+      showToast('رجع الإنترنت! جاري إرسال التعديلات للسيرفر...');
+      processOfflineQueue(false);
+    });
+
+    window.addEventListener('offline', () => {
+      updateConnectionBadge();
+      showToast('أنت الآن بدون إنترنت - يتم الحفظ على الجهاز محلياً', 'error');
+    });
+
+    function updateConnectionBadge() {
+      const statusText = document.getElementById('syncStatusText');
+      if (!statusText) return;
+      const queue = getOfflineQueue();
+      if (navigator.onLine) {
+        statusText.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span> متصل بالسحاب ${queue.length > 0 ? `(في الانتظار: ${queue.length})` : ''}`;
+        statusText.className = "text-[11px] text-emerald-400 flex items-center gap-1";
+      } else {
+        statusText.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500 inline-block"></span> وضع أوفلاين (بدون نت) ${queue.length > 0 ? `- محفوظ: ${queue.length}` : ''}`;
+        statusText.className = "text-[11px] text-amber-400 flex items-center gap-1";
+      }
+    }
 
     function showToast(message, type = 'success') {
       const toast = document.getElementById('toastNotification');
       toast.textContent = message;
       toast.className = `fixed bottom-5 left-5 z-50 px-4 py-3 rounded-xl shadow-2xl text-xs font-bold flex items-center gap-2 transition-all duration-300 ${
-        type === 'error' ? 'bg-red-900 text-red-100 border border-red-700' : 'bg-emerald-900 text-emerald-100 border border-emerald-700'
+        type === 'error' ? 'bg-amber-900 text-amber-100 border border-amber-700' : 'bg-emerald-900 text-emerald-100 border border-emerald-700'
       }`;
       toast.classList.remove('hidden');
       setTimeout(() => {
@@ -544,7 +580,9 @@
       }
       
       selectGrade('1_prep');
-      loadStudents();
+      if (navigator.onLine) {
+        processOfflineQueue(false);
+      }
       setupRealtime();
     }
 
@@ -566,57 +604,110 @@
       showAuth();
     }
 
-    async function loadStudents(manual = false) {
+    // إدارة طابور المزامنة الأوفلاين (Offline Sync Queue)
+    function getOfflineQueue() {
+      try {
+        return JSON.parse(localStorage.getItem('mr_sync_queue') || '[]');
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function addToOfflineQueue(actionType, payload) {
+      const queue = getOfflineQueue();
+      // إزالة أي عملية سابقة لنفس الطالب لتفادي التكرار وإرسال أحدث نسخة
+      const filtered = queue.filter(item => item.id !== payload.id);
+      filtered.push({ type: actionType, id: payload.id, data: payload });
+      localStorage.setItem('mr_sync_queue', JSON.stringify(filtered));
+      updateConnectionBadge();
+    }
+
+    async function processOfflineQueue(manual = false) {
       const syncIcon = document.getElementById('syncIcon');
-      const statusText = document.getElementById('syncStatusText');
       if (manual && syncIcon) syncIcon.classList.add('fa-spin');
 
+      if (!navigator.onLine) {
+        if (manual) showToast('لا يوجد إنترنت حالياً، البيانات محفوظة بأمان على جهازك', 'error');
+        if (manual && syncIcon) syncIcon.classList.remove('fa-spin');
+        return;
+      }
+
+      const queue = getOfflineQueue();
+      if (queue.length > 0) {
+        const remaining = [];
+        for (const item of queue) {
+          try {
+            if (item.type === 'upsert') {
+              const { error } = await supabaseClient.from('students').upsert(item.data);
+              if (error) remaining.push(item);
+            } else if (item.type === 'delete') {
+              const { error } = await supabaseClient.from('students').delete().eq('id', item.id);
+              if (error) remaining.push(item);
+            }
+          } catch (e) {
+            remaining.push(item);
+          }
+        }
+        localStorage.setItem('mr_sync_queue', JSON.stringify(remaining));
+        if (remaining.length === 0) {
+          showToast('تم رفع ومزامنة كل التعديلات المحفوظة مع السيرفر ✓');
+        }
+      }
+
+      await loadStudents(manual);
+      updateConnectionBadge();
+      if (manual && syncIcon) syncIcon.classList.remove('fa-spin');
+    }
+
+    async function loadStudents(manual = false) {
+      if (!navigator.onLine) return;
       try {
         const { data, error } = await supabaseClient.from('students').select('*');
-        if (error) {
-          console.error('Supabase fetch error:', error);
-          statusText.innerHTML = `<span class="w-2 h-2 rounded-full bg-red-500 inline-block"></span> خطأ في الصلاحيات (RLS)`;
-          statusText.className = "text-[11px] text-red-400 flex items-center gap-1";
-          if (manual) showToast('تعذر الاتصال بالسيرفر: تأكد من تعطيل RLS في Supabase', 'error');
-        } else if (data) {
-          studentsData = data;
-          localStorage.setItem('mr_students_backup', JSON.stringify(studentsData));
-          renderStudents();
-          if (activeProfileStudentId) {
-            renderProfileContent(activeProfileStudentId);
+        if (!error && data) {
+          // دمج البيانات السحابية مع التأكد من عدم فقدان أي تعديل لم يُرفع بعد
+          const queue = getOfflineQueue();
+          if (queue.length === 0) {
+            studentsData = data;
+            localStorage.setItem('mr_students_backup', JSON.stringify(studentsData));
+            renderStudents();
+            if (activeProfileStudentId) renderProfileContent(activeProfileStudentId);
           }
-          statusText.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span> متصل بالسحاب`;
-          statusText.className = "text-[11px] text-emerald-400 flex items-center gap-1";
-          if (manual) showToast('تمت المزامنة مع السحابة بنجاح ✓');
+          if (manual && queue.length === 0) showToast('البيانات محدثة بالكامل مع السيرفر ✓');
         }
-      } catch (e) {
-        if (manual) showToast('لا يوجد اتصال بالإنترنت، يتم العرض محلياً', 'error');
-      } finally {
-        if (manual && syncIcon) syncIcon.classList.remove('fa-spin');
-      }
+      } catch (e) {}
     }
 
     function setupRealtime() {
       supabaseClient
         .channel('students-realtime-channel')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'students' }, () => {
-          loadStudents(false);
+          if (navigator.onLine && getOfflineQueue().length === 0) {
+            loadStudents(false);
+          }
         })
         .subscribe();
     }
 
     async function saveStudentToSupabase(student) {
       localStorage.setItem('mr_students_backup', JSON.stringify(studentsData));
+      
+      if (!navigator.onLine) {
+        addToOfflineQueue('upsert', student);
+        showToast('تم الحفظ أوفلاين (سيتم الرفع تلقائياً عند توفر النت)', 'error');
+        return;
+      }
+
       try {
         const { error } = await supabaseClient.from('students').upsert(student);
         if (error) {
-          console.error('Supabase upsert error:', error);
-          showToast('تم الحفظ محلياً: عطل RLS في Supabase للمزامنة السحابية', 'error');
+          addToOfflineQueue('upsert', student);
+          showToast('تم الحفظ محلياً في انتظار المزامنة', 'error');
         } else {
           showToast('تم الحفظ والمزامنة مع السحابة ✓');
         }
       } catch (e) {
-        showToast('تم الحفظ محلياً (أوفلاين)', 'error');
+        addToOfflineQueue('upsert', student);
+        showToast('تم الحفظ أوفلاين (سيتم الرفع عند عودة النت)', 'error');
       }
     }
 
@@ -867,10 +958,19 @@
         closeProfileModal();
         renderStudents();
         localStorage.setItem('mr_students_backup', JSON.stringify(studentsData));
+        
+        if (!navigator.onLine) {
+          addToOfflineQueue('delete', { id });
+          showToast('تم الحذف محلياً (سيُحذف من السيرفر عند عودة النت)', 'error');
+          return;
+        }
+
         try {
           await supabaseClient.from('students').delete().eq('id', id);
           showToast('تم حذف الطالب بنجاح');
-        } catch (e) {}
+        } catch (e) {
+          addToOfflineQueue('delete', { id });
+        }
       }
     }
 
