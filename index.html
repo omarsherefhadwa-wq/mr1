@@ -13,53 +13,88 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --bg-main: #0f172a;
+      --bg-card: #1e293b;
+      --border-card: #334155;
+      --bg-input: #0f172a;
+      --border-input: #475569;
+      --text-main: #f8fafc;
+      --text-sub: #cbd5e1;
+      --text-muted: #94a3b8;
+      --bg-subcard: rgba(15, 23, 42, 0.7);
+    }
+
+    body.light-mode {
+      --bg-main: #f1f5f9;
+      --bg-card: #ffffff;
+      --border-card: #cbd5e1;
+      --bg-input: #f8fafc;
+      --border-input: #94a3b8;
+      --text-main: #0f172a;
+      --text-sub: #334155;
+      --text-muted: #64748b;
+      --bg-subcard: #f8fafc;
+    }
+
     body {
       font-family: 'Tajawal', sans-serif;
-      background-color: #0f172a;
-      color: #f8fafc;
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      transition: background-color 0.25s ease, color 0.25s ease;
     }
+
     .gold-gradient {
       background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
     }
+
     .gold-text {
       color: #fbbf24;
     }
+
     .card-bg {
-      background-color: #1e293b;
-      border: 1px solid #334155;
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-card);
+      transition: background-color 0.25s ease, border-color 0.25s ease;
     }
+
     .input-style {
-      background-color: #0f172a;
-      border: 1px solid #475569;
-      color: #fff;
+      background-color: var(--bg-input);
+      border: 1px solid var(--border-input);
+      color: var(--text-main);
     }
+
     .input-style:focus {
       border-color: #f59e0b;
       outline: none;
     }
-    ::-webkit-scrollbar {
-      width: 8px;
-    }
-    ::-webkit-scrollbar-track {
-      background: #0f172a;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: #334155;
-      border-radius: 4px;
-    }
+
+    /* تكييف الألوان في الوضع الفاتح */
+    body.light-mode .text-white { color: #0f172a !important; }
+    body.light-mode .text-slate-100 { color: #1e293b !important; }
+    body.light-mode .text-slate-200 { color: #334155 !important; }
+    body.light-mode .text-slate-300 { color: #475569 !important; }
+    body.light-mode .text-slate-400 { color: #64748b !important; }
+    body.light-mode .bg-slate-800 { background-color: #e2e8f0 !important; color: #1e293b !important; }
+    body.light-mode .bg-slate-900 { background-color: #f1f5f9 !important; }
+    body.light-mode .bg-slate-900\/70 { background-color: #f8fafc !important; }
+    body.light-mode .bg-slate-950\/50 { background-color: #ffffff !important; border: 1px solid #e2e8f0; }
+    body.light-mode .border-slate-700,
+    body.light-mode .border-slate-800 { border-color: #cbd5e1 !important; }
+    body.light-mode .gold-gradient,
+    body.light-mode .bg-indigo-600,
+    body.light-mode .bg-emerald-600 { color: #ffffff !important; }
+    body.light-mode .gold-gradient { color: #0f172a !important; }
+
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg-main); }
+    ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+
     @media print {
-      body * {
-        visibility: hidden;
-      }
-      #printableArea, #printableArea * {
-        visibility: visible;
-      }
-      #printableArea {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-      }
+      body * { visibility: hidden; }
+      #printableArea, #printableArea * { visibility: visible; }
+      #printableArea { position: absolute; left: 0; top: 0; width: 100%; }
+      .no-print { display: none !important; }
     }
   </style>
 </head>
@@ -67,6 +102,61 @@
 
   <!-- Toast Notification -->
   <div id="toastNotification" class="fixed bottom-5 left-5 z-50 hidden px-4 py-3 rounded-xl shadow-2xl text-xs font-bold flex items-center gap-2 transition-all duration-300"></div>
+
+  <!-- Hidden Input for Backup Restore -->
+  <input type="file" id="restoreFileInput" accept=".json" class="hidden" onchange="handleRestoreBackup(event)">
+
+  <!-- Side Drawer Menu (قائمة الـ 3 شرط) -->
+  <div id="sideDrawerBackdrop" onclick="closeSideDrawer()" class="fixed inset-0 bg-black/60 backdrop-blur-xs z-40 hidden transition-opacity"></div>
+  <aside id="sideDrawer" class="fixed top-0 right-0 h-full w-72 card-bg border-l border-slate-700 z-50 transform translate-x-full transition-transform duration-300 flex flex-col justify-between p-5 shadow-2xl">
+    <div class="space-y-6">
+      <div class="flex items-center justify-between border-b border-slate-700 pb-4">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 gold-gradient rounded-xl flex items-center justify-center text-slate-900 font-bold">
+            <i class="fa-solid fa-user-tie"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-sm text-white">إعدادات منصة MR</h3>
+            <span class="text-[11px] text-slate-400">التحكم والنسخ الاحتياطي</span>
+          </div>
+        </div>
+        <button onclick="closeSideDrawer()" class="text-slate-400 hover:text-white p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <nav class="space-y-2.5">
+        <!-- تبديل وضع الدارك والفاتح -->
+        <button onclick="toggleTheme()" class="w-full flex items-center justify-between p-3 rounded-xl bg-slate-800/70 hover:bg-slate-800 border border-slate-700/70 text-xs font-bold transition">
+          <span class="flex items-center gap-2.5 text-slate-200">
+            <i id="themeIcon" class="fa-solid fa-sun text-amber-400 text-sm"></i>
+            <span id="themeText">تفعيل الوضع الفاتح</span>
+          </span>
+          <span class="text-[10px] px-2 py-0.5 rounded bg-slate-900 text-amber-400">تبديل</span>
+        </button>
+
+        <!-- تنزيل نسخة احتياطية -->
+        <button onclick="downloadBackup()" class="w-full flex items-center gap-3 p-3 rounded-xl bg-slate-800/70 hover:bg-slate-800 border border-slate-700/70 text-xs font-bold text-slate-200 transition">
+          <i class="fa-solid fa-download text-emerald-400 text-sm"></i>
+          <span>تنزيل نسخة احتياطية (Backup)</span>
+        </button>
+
+        <!-- رفع نسخة احتياطية -->
+        <button onclick="triggerRestoreBackup()" class="w-full flex items-center gap-3 p-3 rounded-xl bg-slate-800/70 hover:bg-slate-800 border border-slate-700/70 text-xs font-bold text-slate-200 transition">
+          <i class="fa-solid fa-upload text-indigo-400 text-sm"></i>
+          <span>رفع نسخة احتياطية (Restore)</span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- زر تسجيل الخروج داخل القائمة -->
+    <div class="border-t border-slate-700 pt-4">
+      <button onclick="handleLogout()" class="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-red-950/60 hover:bg-red-900/80 border border-red-800/60 text-red-300 text-xs font-bold transition">
+        <i class="fa-solid fa-right-from-bracket"></i>
+        <span>تسجيل الخروج</span>
+      </button>
+    </div>
+  </aside>
 
   <!-- Application Shell -->
   <div id="app" class="flex-grow flex flex-col">
@@ -120,6 +210,10 @@
       <header class="card-bg border-b border-slate-700 sticky top-0 z-30">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div class="flex items-center space-x-3 space-x-reverse">
+            <!-- زر الـ 3 شرط -->
+            <button onclick="openSideDrawer()" title="القائمة والإعدادات" class="bg-slate-800 hover:bg-slate-700 text-slate-200 w-10 h-10 rounded-xl border border-slate-700 flex items-center justify-center transition">
+              <i class="fa-solid fa-bars text-base"></i>
+            </button>
             <div class="w-10 h-10 gold-gradient rounded-xl flex items-center justify-center text-slate-900 font-bold">
               <i class="fa-solid fa-user-tie"></i>
             </div>
@@ -143,9 +237,6 @@
             <button onclick="openAddStudentModal()" class="gold-gradient text-slate-900 px-4 py-2 rounded-xl font-bold text-sm hover:opacity-90 transition flex items-center space-x-2 space-x-reverse">
               <i class="fa-solid fa-plus"></i>
               <span>إضافة طالب</span>
-            </button>
-            <button onclick="handleLogout()" title="تسجيل الخروج" class="bg-slate-800 text-slate-300 hover:text-red-400 px-3 py-2 rounded-xl text-sm border border-slate-700 transition">
-              <i class="fa-solid fa-right-from-bracket"></i>
             </button>
           </div>
         </div>
@@ -230,7 +321,7 @@
           <i class="fa-solid fa-id-card text-amber-400 text-lg"></i>
           <h3 class="font-bold text-slate-100 text-base">بيانات وملف الطالب</h3>
         </div>
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-3 no-print">
           <button onclick="printStudentQR()" class="text-slate-400 hover:text-amber-400 text-sm transition" title="طباعة كود QR الخاص بالطالب">
             <i class="fa-solid fa-print"></i>
           </button>
@@ -240,7 +331,7 @@
           <button id="profDeleteBtn" class="text-slate-400 hover:text-red-400 text-sm transition" title="حذف الطالب">
             <i class="fa-solid fa-trash-can"></i>
           </button>
-          <button onclick="closeProfileModal()" class="text-slate-400 hover:text-white text-lg no-print">
+          <button onclick="closeProfileModal()" class="text-slate-400 hover:text-white text-lg">
             <i class="fa-solid fa-xmark"></i>
           </button>
         </div>
@@ -260,7 +351,7 @@
           </div>
 
           <!-- QR Code Container -->
-          <div class="flex flex-col items-center justify-center bg-slate-950 p-4 rounded-xl border border-slate-800 my-2">
+          <div class="flex flex-col items-center justify-center bg-slate-950/60 p-4 rounded-xl border border-slate-800 my-2">
             <div id="qrcode" class="bg-white p-2 rounded-lg"></div>
             <span class="text-[11px] text-slate-400 mt-2">امسح الكود لتسجيل الحضور السريع</span>
           </div>
@@ -268,7 +359,7 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 text-xs text-slate-300 border-t border-slate-800">
             <div class="flex items-center justify-between bg-slate-950/50 p-2 rounded-lg">
               <span><i class="fa-solid fa-phone text-slate-500 ml-1"></i> ولي الأمر: <strong id="profParentPhone" class="text-white"></strong></span>
-              <a id="profWhatsappLink" href="#" target="_blank" class="text-emerald-400 hover:text-emerald-300 text-base"><i class="fa-brands fa-whatsapp"></i></a>
+              <a id="profWhatsappLink" href="#" target="_blank" class="text-emerald-400 hover:text-emerald-300 text-base no-print"><i class="fa-brands fa-whatsapp"></i></a>
             </div>
             <div class="flex items-center bg-slate-950/50 p-2 rounded-lg">
               <span><i class="fa-solid fa-mobile-screen text-slate-500 ml-1"></i> الطالب: <strong id="profStudentPhone" class="text-white"></strong></span>
@@ -282,6 +373,35 @@
             <i class="fa-solid fa-clipboard-check text-sm"></i>
             <span>تسجيل حضور / غياب ودرجة تسميع</span>
           </button>
+        </div>
+
+        <!-- التقرير الشهري للطالب وإرساله لولي الأمر واتساب -->
+        <div class="bg-emerald-950/20 border border-emerald-800/50 p-4 rounded-xl space-y-2.5 no-print">
+          <div class="flex items-center justify-between">
+            <h4 class="font-bold text-emerald-400 text-xs flex items-center gap-1.5">
+              <i class="fa-brands fa-whatsapp text-sm"></i> التقرير الشهري لولي الأمر (الحضور + الدفع)
+            </h4>
+          </div>
+          <div class="flex flex-col sm:flex-row gap-2">
+            <select id="profReportMonthSelect" class="flex-grow p-2 rounded-xl input-style text-xs">
+              <option value="1">تقرير شهر 1 (يناير)</option>
+              <option value="2">تقرير شهر 2 (فبراير)</option>
+              <option value="3">تقرير شهر 3 (مارس)</option>
+              <option value="4">تقرير شهر 4 (أبريل)</option>
+              <option value="5">تقرير شهر 5 (مايو)</option>
+              <option value="6">تقرير شهر 6 (يونيو)</option>
+              <option value="7">تقرير شهر 7 (يوليو)</option>
+              <option value="8">تقرير شهر 8 (أغسطس)</option>
+              <option value="9">تقرير شهر 9 (سبتمبر)</option>
+              <option value="10">تقرير شهر 10 (أكتوبر)</option>
+              <option value="11" selected>تقرير شهر 11 (نوفمبر)</option>
+              <option value="12">تقرير شهر 12 (ديسمبر)</option>
+            </select>
+            <button onclick="sendStudentMonthlyWhatsApp()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center justify-center gap-2 transition shadow">
+              <i class="fa-brands fa-whatsapp text-sm"></i>
+              <span>إرسال التقرير لولي الأمر</span>
+            </button>
+          </div>
         </div>
 
         <div class="space-y-2 no-print">
@@ -510,8 +630,8 @@
             <option value="7">شهر 7 (يوليو)</option>
             <option value="8">شهر 8 (أغسطس)</option>
             <option value="9">شهر 9 (سبتمبر)</option>
-            <option value="10" selected>شهر 10 (أكتوبر)</option>
-            <option value="11">شهر 11 (نوفمبر)</option>
+            <option value="10">شهر 10 (أكتوبر)</option>
+            <option value="11" selected>شهر 11 (نوفمبر)</option>
             <option value="12">شهر 12 (ديسمبر)</option>
           </select>
         </div>
@@ -573,10 +693,132 @@
       'bac': 'صف البكالوريا'
     };
 
+    const monthNames = {
+      '1': 'يناير', '2': 'فبراير', '3': 'مارس', '4': 'أبريل',
+      '5': 'مايو', '6': 'يونيو', '7': 'يوليو', '8': 'أغسطس',
+      '9': 'سبتمبر', '10': 'أكتوبر', '11': 'نوفمبر', '12': 'ديسمبر'
+    };
+
     window.addEventListener('DOMContentLoaded', () => {
+      initTheme();
       updateConnectionBadge();
       checkAuthStatus();
     });
+
+    // إدارة المظهر (الوضع الداكن / الفاتح)
+    function initTheme() {
+      const savedTheme = localStorage.getItem('mr_theme') || 'dark';
+      if (savedTheme === 'light') {
+        document.body.classList.add('light-mode');
+        updateThemeUI(true);
+      } else {
+        document.body.classList.remove('light-mode');
+        updateThemeUI(false);
+      }
+    }
+
+    function toggleTheme() {
+      const isLight = document.body.classList.toggle('light-mode');
+      localStorage.setItem('mr_theme', isLight ? 'light' : 'dark');
+      updateThemeUI(isLight);
+    }
+
+    function updateThemeUI(isLight) {
+      const icon = document.getElementById('themeIcon');
+      const text = document.getElementById('themeText');
+      if (!icon || !text) return;
+      if (isLight) {
+        icon.className = 'fa-solid fa-moon text-indigo-500 text-sm';
+        text.textContent = 'تفعيل الوضع الداكن (Dark)';
+      } else {
+        icon.className = 'fa-solid fa-sun text-amber-400 text-sm';
+        text.textContent = 'تفعيل الوضع الفاتح (Light)';
+      }
+    }
+
+    // إدارة قائمة الـ 3 شرط (Side Drawer)
+    function openSideDrawer() {
+      document.getElementById('sideDrawerBackdrop').classList.remove('hidden');
+      document.getElementById('sideDrawer').classList.remove('translate-x-full');
+    }
+
+    function closeSideDrawer() {
+      document.getElementById('sideDrawerBackdrop').classList.add('hidden');
+      document.getElementById('sideDrawer').classList.add('translate-x-full');
+    }
+
+    // تنزيل نسخة احتياطية (Backup)
+    function downloadBackup() {
+      try {
+        const backupObj = {
+          app: 'MR_Student_Manager',
+          exported_at: new Date().toISOString(),
+          students: studentsData
+        };
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupObj, null, 2));
+        const downloadAnchor = document.createElement('a');
+        const dateTag = new Date().toISOString().split('T')[0];
+        downloadAnchor.setAttribute("href", dataStr);
+        downloadAnchor.setAttribute("download", `MR_Backup_${dateTag}.json`);
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+        closeSideDrawer();
+        showToast('تم تنزيل ملف النسخة الاحتياطية بنجاح ✓');
+      } catch (e) {
+        showToast('حدث خطأ أثناء تنزيل النسخة', 'error');
+      }
+    }
+
+    // رفع نسخة احتياطية (Restore)
+    function triggerRestoreBackup() {
+      document.getElementById('restoreFileInput').click();
+    }
+
+    async function handleRestoreBackup(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          const importedStudents = Array.isArray(parsed) ? parsed : parsed.students;
+          
+          if (!Array.isArray(importedStudents)) {
+            showToast('ملف النسخة الاحتياطية غير صالح!', 'error');
+            return;
+          }
+
+          if (!confirm(`سيتم استرجاع عدد (${importedStudents.length}) طالب من النسخة الاحتياطية. هل تريد المتابعة؟`)) {
+            event.target.value = '';
+            return;
+          }
+
+          studentsData = importedStudents;
+          localStorage.setItem('mr_students_backup', JSON.stringify(studentsData));
+          renderStudents();
+          closeSideDrawer();
+
+          if (navigator.onLine) {
+            const { error } = await supabaseClient.from('students').upsert(studentsData);
+            if (error) {
+              studentsData.forEach(s => addToOfflineQueue('upsert', s));
+              showToast('تم استرجاع البيانات محلياً وفي انتظار المزامنة', 'error');
+            } else {
+              showToast('تم رفع واسترجاع النسخة الاحتياطية ومزامنتها بالسحاب ✓');
+            }
+          } else {
+            studentsData.forEach(s => addToOfflineQueue('upsert', s));
+            showToast('تم استرجاع البيانات أوفلاين (ستُرفع عند عودة النت)', 'error');
+          }
+        } catch (err) {
+          showToast('تعذر قراءة الملف، تأكد من اختيار ملف JSON صحيح', 'error');
+        }
+        event.target.value = '';
+      };
+      reader.readAsText(file);
+    }
 
     window.addEventListener('online', () => {
       updateConnectionBadge();
@@ -660,6 +902,7 @@
     }
 
     function handleLogout() {
+      closeSideDrawer();
       localStorage.removeItem('mr_teacher_logged');
       showAuth();
     }
@@ -873,6 +1116,11 @@
       document.getElementById('profFee').textContent = `${s.fee || 150} ج.م`;
       document.getElementById('profWhatsappLink').href = `https://wa.me/2${s.parent_phone}`;
 
+      // تحديد الشهر الحالي تلقائياً في التقرير الشهري
+      const currentMonth = String(new Date().getMonth() + 1);
+      const profMonthSelect = document.getElementById('profReportMonthSelect');
+      if (profMonthSelect) profMonthSelect.value = currentMonth;
+
       // توليد QR Code للطالب داخلياً
       const qrcodeContainer = document.getElementById('qrcode');
       qrcodeContainer.innerHTML = '';
@@ -944,6 +1192,55 @@
       }
     }
 
+    // إرسال تقرير شهري شامل لولي الأمر عبر واتساب
+    function sendStudentMonthlyWhatsApp() {
+      const s = studentsData.find(x => x.id === activeProfileStudentId);
+      if (!s) return;
+
+      const selectedMonth = document.getElementById('profReportMonthSelect').value;
+      const monthLabel = `${selectedMonth} (${monthNames[selectedMonth]})`;
+      const paddedMonth = selectedMonth.padStart(2, '0');
+
+      const allAttendance = s.attendance || [];
+      // تصفية سجلات الشهر المختار (أو عرض الإجمالي لو مفيش تواريخ مطابقة)
+      const monthRecords = allAttendance.filter(a => a.date && a.date.split('-')[1] === paddedMonth);
+      const recordsToReport = monthRecords.length > 0 ? monthRecords : allAttendance;
+
+      const presentCount = recordsToReport.filter(a => a.status === 'present').length;
+      const absentRecords = recordsToReport.filter(a => a.status === 'absent');
+      const absentCount = absentRecords.length;
+      const absentDates = absentRecords.map(a => a.date).join(' ، ');
+
+      const quizGrades = recordsToReport
+        .filter(a => a.quiz)
+        .map(a => `${a.quiz} (${a.date})`)
+        .join(' | ');
+
+      const payments = s.payments || {};
+      const monthPayment = payments[selectedMonth];
+      const isPaid = monthPayment && monthPayment.is_paid;
+      const paymentStatusText = isPaid
+        ? `تم سداد اشتراك الشهر بالكامل (${monthPayment.amount || s.fee || 150} ج.م) ✅`
+        : `لم يتم سداد اشتراك شهر ${monthLabel} حتى الآن (المطلوب: ${s.fee || 150} ج.م) ⚠️`;
+
+      let msg = `السلام عليكم ورحمة الله وبركاته 🌹\n`;
+      msg += `ولي أمر الطالب: *${s.name}* (كود: ${s.code || '1'})\n`;
+      msg += `الصف: ${gradeNames[s.grade]}\n`;
+      msg += `------------------\n`;
+      msg += `📊 *التقرير الشهري - شهر ${monthLabel}:*\n`;
+      msg += `• أيام الحضور: *${presentCount}* حصة\n`;
+      msg += `• أيام الغياب: *${absentCount}* حصة${absentCount > 0 ? ` (تواريخ الغياب: ${absentDates})` : ''}\n`;
+      msg += `• درجات التسميع: ${quizGrades || 'لا توجد درجات مسجلة'}\n`;
+      msg += `• حالة الاشتراك: ${paymentStatusText}\n`;
+      msg += `------------------\n`;
+      msg += `مع تحيات إدارة منصة *MR* 🎓`;
+
+      const cleanPhone = s.parent_phone.replace(/\D/g, '');
+      const waPhone = cleanPhone.startsWith('2') ? cleanPhone : `2${cleanPhone}`;
+      const url = `https://wa.me/${waPhone}?text=${encodeURIComponent(msg)}`;
+      window.open(url, '_blank');
+    }
+
     function closeProfileModal() {
       activeProfileStudentId = null;
       document.getElementById('profileModal').classList.add('hidden');
@@ -989,7 +1286,7 @@
         closeAttendanceModal();
         if (activeProfileStudentId) renderProfileContent(student.id);
         await saveStudentToSupabase(student);
-        showToast(`تم تسجيل الحضور للطالب: ${student.name} ✓`);
+        showToast(`تم تسجيل ${status === 'present' ? 'الحضور' : 'الغياب'} للطالب: ${student.name} ✓`);
       }
     }
 
@@ -1006,7 +1303,6 @@
       document.getElementById('editStudentId').value = '';
       document.getElementById('modalStudentTitle').textContent = 'إضافة طالب جديد';
       
-      // حساب الكود التلقائي التالي بدءاً من 1
       let maxCode = 0;
       studentsData.forEach(s => {
         const c = parseInt(s.code);
