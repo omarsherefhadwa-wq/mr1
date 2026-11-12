@@ -163,13 +163,13 @@
           </div>
         </div>
 
-        <!-- Controls Bar -->
+        <!-- Controls Bar & Quick Code Search -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div class="md:col-span-2 relative">
             <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400">
               <i class="fa-solid fa-magnifying-glass"></i>
             </span>
-            <input type="text" id="searchInput" oninput="renderStudents()" placeholder="ابحث باسم الطالب..." class="w-full pr-10 pl-4 py-3 rounded-xl input-style text-sm">
+            <input type="text" id="searchInput" oninput="renderStudents()" placeholder="ابحث باسم الطالب أو بالكود..." class="w-full pr-10 pl-4 py-3 rounded-xl input-style text-sm">
           </div>
 
           <button onclick="openReportModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl text-sm transition flex items-center justify-center space-x-2 space-x-reverse shadow-lg">
@@ -224,7 +224,10 @@
         <div class="bg-slate-900/70 p-4 rounded-xl border border-slate-800 space-y-3">
           <div class="flex justify-between items-start">
             <div>
-              <h2 id="profStudentName" class="text-lg font-bold text-white"></h2>
+              <div class="flex items-center gap-2">
+                <h2 id="profStudentName" class="text-lg font-bold text-white"></h2>
+                <span id="profStudentCodeBadge" class="bg-amber-500/10 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-lg text-xs font-bold"></span>
+              </div>
               <p id="profStudentGroup" class="text-xs text-amber-400 mt-0.5"></p>
             </div>
             <span id="profGradeBadge" class="text-xs px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700"></span>
@@ -324,6 +327,11 @@
       </div>
 
       <form id="addStudentForm" onsubmit="handleAddStudent(event)" class="space-y-3">
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1">كود الطالب (تلقائي أو مخصص)</label>
+          <input type="text" id="newStudentCode" class="w-full p-2.5 rounded-xl input-style text-sm font-bold text-amber-400" placeholder="مثال: 101">
+        </div>
+
         <div>
           <label class="block text-xs font-medium text-slate-300 mb-1">اسم الطالب ثلاثي *</label>
           <input type="text" id="newStudentName" required class="w-full p-2.5 rounded-xl input-style text-sm" placeholder="أدخل اسم الطالب">
@@ -486,7 +494,6 @@
   </div>
 
   <script>
-    // تسجيل Service Worker للعمل بدون إنترنت (Offline Support)
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js')
@@ -517,7 +524,6 @@
       checkAuthStatus();
     });
 
-    // مراقبة حالة الإنترنت وتفريغ طابور المزامنة تلقائياً
     window.addEventListener('online', () => {
       updateConnectionBadge();
       showToast('رجع الإنترنت! جاري إرسال التعديلات للسيرفر...');
@@ -604,7 +610,6 @@
       showAuth();
     }
 
-    // إدارة طابور المزامنة الأوفلاين (Offline Sync Queue)
     function getOfflineQueue() {
       try {
         return JSON.parse(localStorage.getItem('mr_sync_queue') || '[]');
@@ -615,7 +620,6 @@
 
     function addToOfflineQueue(actionType, payload) {
       const queue = getOfflineQueue();
-      // إزالة أي عملية سابقة لنفس الطالب لتفادي التكرار وإرسال أحدث نسخة
       const filtered = queue.filter(item => item.id !== payload.id);
       filtered.push({ type: actionType, id: payload.id, data: payload });
       localStorage.setItem('mr_sync_queue', JSON.stringify(filtered));
@@ -664,7 +668,6 @@
       try {
         const { data, error } = await supabaseClient.from('students').select('*');
         if (!error && data) {
-          // دمج البيانات السحابية مع التأكد من عدم فقدان أي تعديل لم يُرفع بعد
           const queue = getOfflineQueue();
           if (queue.length === 0) {
             studentsData = data;
@@ -762,7 +765,7 @@
 
       const filtered = studentsData.filter(s => {
         const matchesGrade = s.grade === currentGrade;
-        const matchesSearch = !search || s.name.toLowerCase().includes(search);
+        const matchesSearch = !search || s.name.toLowerCase().includes(search) || (s.code && s.code.toLowerCase().includes(search));
         return matchesGrade && matchesSearch;
       });
 
@@ -776,15 +779,20 @@
       emptyState.classList.add('hidden');
 
       filtered.forEach(s => {
+        const studentCode = s.code || '---';
         const card = document.createElement('div');
         card.className = 'card-bg rounded-xl p-4 border border-slate-700/80 hover:border-amber-500 transition cursor-pointer flex items-center justify-between shadow-sm group';
         card.onclick = () => openProfileModal(s.id);
         card.innerHTML = `
           <div class="flex items-center space-x-3 space-x-reverse truncate">
-            <div class="w-9 h-9 rounded-lg bg-slate-900 border border-slate-700 flex items-center justify-center text-amber-400 group-hover:bg-amber-500 group-hover:text-slate-900 transition flex-shrink-0">
-              <i class="fa-solid fa-user-graduate text-sm"></i>
+            <div class="w-10 h-10 rounded-lg bg-slate-900 border border-slate-700 flex flex-col items-center justify-center text-amber-400 group-hover:bg-amber-500 group-hover:text-slate-900 transition flex-shrink-0">
+              <span class="text-[10px] font-bold">كود</span>
+              <span class="text-xs font-extrabold">${studentCode}</span>
             </div>
-            <h4 class="font-bold text-white text-sm truncate group-hover:text-amber-400 transition">${s.name}</h4>
+            <div class="truncate">
+              <h4 class="font-bold text-white text-sm truncate group-hover:text-amber-400 transition">${s.name}</h4>
+              <span class="text-[11px] text-slate-400">مجموعة: ${s.group_name || 'عام'}</span>
+            </div>
           </div>
           <i class="fa-solid fa-chevron-left text-xs text-slate-500 group-hover:text-amber-400 transition"></i>
         `;
@@ -803,6 +811,7 @@
       if (!s) return;
 
       document.getElementById('profStudentName').textContent = s.name;
+      document.getElementById('profStudentCodeBadge').textContent = `كود: ${s.code || '---'}`;
       document.getElementById('profStudentGroup').textContent = s.group_name || 'بدون مجموعة محددة';
       document.getElementById('profGradeBadge').textContent = gradeNames[s.grade];
       document.getElementById('profParentPhone').textContent = s.parent_phone;
@@ -922,6 +931,9 @@
     }
 
     function openAddStudentModal() {
+      // توليد كود تلقائي جديد بناء على عدد الطلاب
+      const nextCode = (studentsData.length + 101).toString();
+      document.getElementById('newStudentCode').value = nextCode;
       document.getElementById('newStudentGrade').value = currentGrade;
       document.getElementById('addStudentModal').classList.remove('hidden');
     }
@@ -934,6 +946,7 @@
       e.preventDefault();
       const newStudent = {
         id: 'st_' + Date.now(),
+        code: document.getElementById('newStudentCode').value.trim() || String(Math.floor(100 + Math.random() * 900)),
         name: document.getElementById('newStudentName').value.trim(),
         parent_phone: document.getElementById('newParentPhone').value.trim(),
         student_phone: document.getElementById('newStudentPhone').value.trim(),
@@ -1073,7 +1086,7 @@
           div.className = 'flex items-center justify-between card-bg p-3 rounded-xl border border-red-900/40 text-xs';
           div.innerHTML = `
             <div>
-              <div class="font-bold text-slate-100">${s.name} <span class="text-[10px] text-slate-400">(${gradeNames[s.grade]})</span></div>
+              <div class="font-bold text-slate-100">${s.name} <span class="text-[10px] text-amber-400">(كود: ${s.code || '---'})</span></div>
               <div class="text-red-400 mt-0.5">الشهور المستحقة عليه: <strong>شهر ${monthsText}</strong></div>
               <div class="text-slate-400 text-[11px]">ولي الأمر: ${s.parent_phone}</div>
             </div>
@@ -1100,7 +1113,7 @@
           div.className = 'flex items-center justify-between card-bg p-3 rounded-xl border border-emerald-900/40 text-xs';
           div.innerHTML = `
             <div>
-              <div class="font-bold text-slate-100">${s.name} <span class="text-[10px] text-slate-400">(${gradeNames[s.grade]})</span></div>
+              <div class="font-bold text-slate-100">${s.name} <span class="text-[10px] text-amber-400">(كود: ${s.code || '---'})</span></div>
               <div class="text-emerald-400 mt-0.5">سدد مبلغ: <strong>${paidAmount} ج.م</strong> بتاريخ: ${payDate}</div>
             </div>
             <span class="text-emerald-400 bg-emerald-950/80 px-2.5 py-1 rounded-full border border-emerald-800/50">تم الدفع ✓</span>
