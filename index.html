@@ -184,6 +184,12 @@
           <button type="submit" class="w-full py-3 rounded-xl gold-gradient font-bold text-slate-900 hover:opacity-90 transition">
             تسجيل الدخول
           </button>
+          
+          <!-- زر إصلاح سريع لحل مشكلة الدخول فوراً -->
+          <button type="button" onclick="hardResetLoginSession()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs rounded-xl border border-slate-700 transition flex items-center justify-center gap-1.5 mt-2">
+            <i class="fa-solid fa-rotate-right text-amber-400"></i>
+            <span>إصلاح وتطهير جلسة الدخول (إذا علق معك)</span>
+          </button>
         </form>
       </div>
     </div>
@@ -800,6 +806,14 @@
       reader.readAsText(file);
     }
 
+    // زر إصلاح وتطهير جلسة الدخول
+    function hardResetLoginSession() {
+      localStorage.removeItem('mr_teacher_logged');
+      document.getElementById('loginEmail').value = 'mr@gmail.com';
+      document.getElementById('loginPassword').value = 'mora#70007#';
+      showToast('تمت إعادة ضبط الجلسة، اضغط تسجيل الدخول الآن');
+    }
+
     window.addEventListener('online', () => {
       updateConnectionBadge();
       showToast('رجع الإنترنت! جاري إرسال التعديلات للسيرفر...');
@@ -1363,7 +1377,6 @@
       const inputName = document.getElementById('newStudentName').value.trim();
       const targetGrade = document.getElementById('newStudentGrade').value;
 
-      // التحقق من تكرار الكود أو الاسم داخل نفس الصف الدراسي
       const duplicateCode = studentsData.find(s => String(s.code) === inputCode && s.grade === targetGrade && s.id !== editId);
       if (duplicateCode) {
         showToast(`خطأ: الكود (${inputCode}) مستخدم بالفعل للطالب (${duplicateCode.name}) في هذا الصف!`, 'error');
@@ -1561,16 +1574,15 @@
         const isPaid = payments[month] && payments[month].is_paid;
 
         if (isPaid) {
+          paidList.path = true; // safe assignment
           paidList.push(s);
         } else {
           const unpaidMonths = [];
           for (let m = 1; m <= month; m++) {
             if (!payments[m] || !payments[m].is_paid) {
-              unpaidMonths.5 && unpaidMonths.push(m); // Safe push
               unpaidMonths.push(m);
             }
           }
-          // إزالة التكرار المحتمل للشهور
           const uniqueMonths = [...new Set(unpaidMonths)];
           unpaidList.push({ student: s, unpaidMonths: uniqueMonths });
         }
