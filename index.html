@@ -94,7 +94,7 @@
   <!-- Hidden Input for Backup Restore -->
   <input type="file" id="restoreFileInput" accept=".json" class="hidden" onchange="handleRestoreBackup(event)">
 
-  <!-- Side Drawer Menu (قائمة الإعدادات والنسخ) -->
+  <!-- Side Drawer Menu -->
   <div id="sideDrawerBackdrop" onclick="closeSideDrawer()" class="fixed inset-0 bg-black/60 backdrop-blur-xs z-40 hidden transition-opacity"></div>
   <aside id="sideDrawer" class="fixed top-0 right-0 h-full w-72 card-bg border-l border-slate-700 z-50 transform translate-x-full transition-transform duration-300 flex flex-col justify-between p-5 shadow-2xl">
     <div class="space-y-6">
@@ -407,7 +407,7 @@
     </div>
   </div>
 
-  <!-- Modal: Attendance & Quiz (إضافة أو تعديل سجل حصة) -->
+  <!-- Modal: Attendance & Quiz -->
   <div id="attendanceModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
     <div class="card-bg rounded-2xl max-w-md w-full p-6 space-y-4 border border-slate-700 shadow-2xl">
       <div class="flex items-center justify-between border-b border-slate-700 pb-3">
@@ -466,7 +466,7 @@
         <input type="hidden" id="editStudentId">
         
         <div>
-          <label class="block text-xs font-medium text-slate-300 mb-1">كود الطالب (يبدأ من 1 تلقائياً)</label>
+          <label class="block text-xs font-medium text-slate-300 mb-1">كود الطالب (مستقل لكل صف يبدأ من 1 تلقائياً)</label>
           <input type="text" id="newStudentCode" required class="w-full p-2.5 rounded-xl input-style text-sm font-bold text-amber-400" placeholder="1">
         </div>
 
@@ -489,7 +489,7 @@
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block text-xs font-medium text-slate-300 mb-1">الصف الدراسي</label>
-            <select id="newStudentGrade" class="w-full p-2.5 rounded-xl input-style text-sm">
+            <select id="newStudentGrade" onchange="onGradeChangeInModal()" class="w-full p-2.5 rounded-xl input-style text-sm">
               <option value="1_prep">الأول الإعدادي</option>
               <option value="2_prep">الثاني الإعدادي</option>
               <option value="3_prep">الثالث الإعدادي</option>
@@ -1042,7 +1042,7 @@
 
       const filtered = studentsData.filter(s => {
         const matchesGrade = s.grade === currentGrade;
-        const matchesSearch = !search || s.name.toLowerCase().includes(search) || (s.code && s.code.toLowerCase().includes(search));
+        const matchesSearch = !search || s.name.toLowerCase().includes(search) || (s.code && String(s.code).toLowerCase().includes(search));
         return matchesGrade && matchesSearch;
       });
 
@@ -1128,7 +1128,6 @@
         attendance.slice().reverse().forEach((att, idx) => {
           const realIdx = attendance.length - 1 - idx;
           const div = document.createElement('div');
-          // جعل السجل قابلاً للضغط لتعديله
           div.className = 'flex items-center justify-between bg-slate-900/70 hover:bg-slate-800 px-3 py-2 rounded-lg border border-slate-800 text-xs cursor-pointer transition';
           div.title = 'اضغط لتعديل هذا السجل';
           div.innerHTML = `
@@ -1228,7 +1227,6 @@
       window.print();
     }
 
-    // فتح نافذة الحضور (سواء للإضافة أو التعديل)
     function openAttendanceModal(studentId, recordIndex = -1) {
       const student = studentsData.find(s => s.id === studentId);
       if (!student) return;
@@ -1239,7 +1237,7 @@
 
       if (recordIndex >= 0 && student.attendance && student.attendance[recordIndex]) {
         const record = student.attendance[recordIndex];
-        document.getElementById('attModalTitle').innerHTML = '<i class="fa-solid.fa-pen-to-square text-amber-400"></i> تعديل سجل الحضور والتسميع';
+        document.getElementById('attModalTitle').innerHTML = '<i class="fa-solid fa-pen-to-square text-amber-400"></i> تعديل سجل الحضور والتسميع';
         document.getElementById('attStatus').value = record.status || 'present';
         document.getElementById('attQuizGrade').value = record.quiz || '';
         document.getElementById('attDate').value = record.date || new Date().toISOString().split('T')[0];
@@ -1270,7 +1268,6 @@
         if (!student.attendance) student.attendance = [];
 
         if (recordIndex >= 0 && student.attendance[recordIndex]) {
-          // تعديل السجل القائم
           student.attendance[recordIndex] = {
             status,
             quiz: quiz || null,
@@ -1278,7 +1275,6 @@
           };
           showToast('تم تحديث سجل الحضور بنجاح ✓');
         } else {
-          // إضافة سجل جديد
           student.attendance.push({
             status,
             quiz: quiz || null,
@@ -1303,24 +1299,46 @@
       }
     }
 
+    // دالة لحساب وتوليد التالي لكود الصف الحالي تلقائياً
+    function getNextCodeForGrade(gradeKey) {
+      let maxNum = 0;
+      studentsData.forEach(s => {
+        if (s.grade === gradeKey) {
+          const c = parseInt(s.code);
+          if (!isNaN(c) && c > maxNum) {
+            maxNum = c;
+          }
+        }
+      });
+      return String(maxNum + 1);
+    }
+
     function openAddStudentModal() {
       document.getElementById('editStudentId').value = '';
       document.getElementById('modalStudentTitle').textContent = 'إضافة طالب جديد';
       
-      let maxCode = 0;
-      studentsData.forEach(s => {
-        const c = parseInt(s.code);
-        if (!isNaN(c) && c > maxCode) maxCode = c;
-      });
-      document.getElementById('newStudentCode').value = String(maxCode + 1);
+      // تعيين الصف المختار حالياً كافتراضي في نافذة الإضافة
+      document.getElementById('newStudentGrade').value = currentGrade;
+      
+      // جلب وتسجيل أول كود متاح لهذا الصف
+      document.getElementById('newStudentCode').value = getNextCodeForGrade(currentGrade);
 
       document.getElementById('newStudentName').value = '';
       document.getElementById('newParentPhone').value = '';
       document.getElementById('newStudentPhone').value = '';
-      document.getElementById('newStudentGrade').value = currentGrade;
       document.getElementById('newStudentGroup').value = '';
       document.getElementById('newStudentFee').value = 150;
       document.getElementById('addStudentModal').classList.remove('hidden');
+    }
+
+    // عند تغيير الصف الدراسي داخل نافذة الإضافة، نقترح كود جديد خاص بهذا الصف الجديد
+    function onGradeChangeInModal() {
+      const selectedGrade = document.getElementById('newStudentGrade').value;
+      const editId = document.getElementById('editStudentId').value;
+      // نقترح الكود فقط لو كنا في وضع إضافة طالب جديد
+      if (!editId) {
+        document.getElementById('newStudentCode').value = getNextCodeForGrade(selectedGrade);
+      }
     }
 
     function openEditStudentModal(studentId) {
@@ -1367,13 +1385,14 @@
           showToast('تم تحديث بيانات الطالب بنجاح ✓');
         }
       } else {
+        const targetGrade = document.getElementById('newStudentGrade').value;
         const newStudent = {
           id: 'st_' + Date.now(),
-          code: document.getElementById('newStudentCode').value.trim() || '1',
+          code: document.getElementById('newStudentCode').value.trim() || getNextCodeForGrade(targetGrade),
           name: document.getElementById('newStudentName').value.trim(),
           parent_phone: document.getElementById('newParentPhone').value.trim(),
           student_phone: document.getElementById('newStudentPhone').value.trim(),
-          grade: document.getElementById('newStudentGrade').value,
+          grade: targetGrade,
           group_name: document.getElementById('newStudentGroup').value.trim(),
           fee: Number(document.getElementById('newStudentFee').value) || 150,
           payments: {},
@@ -1420,7 +1439,8 @@
 
     async function handleScannedCode(code) {
       const cleanCode = code.trim();
-      const student = studentsData.find(s => s.code === cleanCode);
+      // البحث في الصف الحالي أو في كل الطلاب
+      const student = studentsData.find(s => String(s.code) === cleanCode && s.grade === currentGrade) || studentsData.find(s => String(s.code) === cleanCode);
       
       if (student) {
         closeScannerModal();
@@ -1437,7 +1457,7 @@
         showToast(`تم تسجيل حضور الطالب: ${student.name} (كود: ${cleanCode}) بنجاح! ✓`);
         openProfileModal(student.id);
       } else {
-        showToast(`الكود (${cleanCode}) غير مسجل لأي طالب!`, 'error');
+        showToast(`الكود (${cleanCode}) غير مسجل لأي طالب في هذا الصف!`, 'error');
       }
     }
 
@@ -1490,7 +1510,7 @@
       const studentId = document.getElementById('payStudentId').value;
       const month = document.getElementById('payMonthSelect').value;
       const timestamp = document.getElementById('payTimestamp').value;
-      const amountPaid = Number(document.getElementById('payAmountInput').value) || 0;
+      const amountPaid = Number(document.getElementById('payAmountInput.value')) || Number(document.getElementById('payAmountInput').value) || 0;
 
       const student = studentsData.find(s => s.id === studentId);
       if (student) {
