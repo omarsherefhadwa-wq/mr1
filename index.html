@@ -9,6 +9,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
   <style>
@@ -45,6 +46,20 @@
     ::-webkit-scrollbar-thumb {
       background: #334155;
       border-radius: 4px;
+    }
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #printableArea, #printableArea * {
+        visibility: visible;
+      }
+      #printableArea {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+      }
     }
   </style>
 </head>
@@ -121,7 +136,7 @@
               <i class="fa-solid fa-rotate" id="syncIcon"></i>
               <span class="hidden sm:inline">مزامنة</span>
             </button>
-            <button onclick="openScannerModal()" title="مسح كيو آر / باركود الحضور" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-xl text-sm transition flex items-center space-x-1 space-x-reverse shadow-md">
+            <button onclick="openScannerModal()" title="مسح كيو آر الحضور" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-xl text-sm transition flex items-center space-x-1 space-x-reverse shadow-md">
               <i class="fa-solid fa-camera"></i>
               <span class="hidden sm:inline">مسح بالكاميرا</span>
             </button>
@@ -168,7 +183,7 @@
           </div>
         </div>
 
-        <!-- Controls Bar & Quick Code Search -->
+        <!-- Controls Bar -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div class="md:col-span-2 relative">
             <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400">
@@ -209,20 +224,23 @@
 
   <!-- Modal: Student Profile -->
   <div id="profileModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
-    <div class="card-bg rounded-2xl max-w-2xl w-full p-6 space-y-5 border border-slate-700 shadow-2xl max-h-[90vh] flex flex-col">
+    <div id="printableArea" class="card-bg rounded-2xl max-w-2xl w-full p-6 space-y-5 border border-slate-700 shadow-2xl max-h-[90vh] flex flex-col">
       <div class="flex items-center justify-between border-b border-slate-700 pb-3 flex-shrink-0">
         <div class="flex items-center gap-2">
           <i class="fa-solid fa-id-card text-amber-400 text-lg"></i>
           <h3 class="font-bold text-slate-100 text-base">بيانات وملف الطالب</h3>
         </div>
         <div class="flex items-center gap-3">
+          <button onclick="printStudentQR()" class="text-slate-400 hover:text-amber-400 text-sm transition" title="طباعة كود QR الخاص بالطالب">
+            <i class="fa-solid fa-print"></i>
+          </button>
           <button id="profEditBtn" class="text-slate-400 hover:text-amber-400 text-sm transition" title="تعديل بيانات الطالب">
             <i class="fa-solid fa-pen-to-square"></i>
           </button>
           <button id="profDeleteBtn" class="text-slate-400 hover:text-red-400 text-sm transition" title="حذف الطالب">
             <i class="fa-solid fa-trash-can"></i>
           </button>
-          <button onclick="closeProfileModal()" class="text-slate-400 hover:text-white text-lg">
+          <button onclick="closeProfileModal()" class="text-slate-400 hover:text-white text-lg no-print">
             <i class="fa-solid fa-xmark"></i>
           </button>
         </div>
@@ -241,6 +259,12 @@
             <span id="profGradeBadge" class="text-xs px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700"></span>
           </div>
 
+          <!-- QR Code Container -->
+          <div class="flex flex-col items-center justify-center bg-slate-950 p-4 rounded-xl border border-slate-800 my-2">
+            <div id="qrcode" class="bg-white p-2 rounded-lg"></div>
+            <span class="text-[11px] text-slate-400 mt-2">امسح الكود لتسجيل الحضور السريع</span>
+          </div>
+
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 text-xs text-slate-300 border-t border-slate-800">
             <div class="flex items-center justify-between bg-slate-950/50 p-2 rounded-lg">
               <span><i class="fa-solid fa-phone text-slate-500 ml-1"></i> ولي الأمر: <strong id="profParentPhone" class="text-white"></strong></span>
@@ -254,13 +278,13 @@
             </div>
           </div>
 
-          <button id="profAttendanceBtn" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 transition shadow-md">
+          <button id="profAttendanceBtn" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 transition shadow-md no-print">
             <i class="fa-solid fa-clipboard-check text-sm"></i>
             <span>تسجيل حضور / غياب ودرجة تسميع</span>
           </button>
         </div>
 
-        <div class="space-y-2">
+        <div class="space-y-2 no-print">
           <div class="flex items-center justify-between">
             <h4 class="font-bold text-indigo-400 text-xs flex items-center gap-1.5">
               <i class="fa-solid fa-clock-rotate-left"></i> سجل الحضور والتسميع
@@ -270,7 +294,7 @@
           <div id="profAttendanceList" class="space-y-1.5 max-h-40 overflow-y-auto"></div>
         </div>
 
-        <div class="space-y-2">
+        <div class="space-y-2 no-print">
           <h4 class="font-bold text-emerald-400 text-xs flex items-center gap-1.5">
             <i class="fa-solid fa-money-check-dollar"></i> المدفوعات الشهرية (اضغط على الشهر لتسجيل الدفع)
           </h4>
@@ -338,8 +362,8 @@
         <input type="hidden" id="editStudentId">
         
         <div>
-          <label class="block text-xs font-medium text-slate-300 mb-1">كود الطالب</label>
-          <input type="text" id="newStudentCode" required class="w-full p-2.5 rounded-xl input-style text-sm font-bold text-amber-400" placeholder="مثال: 101">
+          <label class="block text-xs font-medium text-slate-300 mb-1">كود الطالب (يبدأ من 1 تلقائياً)</label>
+          <input type="text" id="newStudentCode" required class="w-full p-2.5 rounded-xl input-style text-sm font-bold text-amber-400" placeholder="1">
         </div>
 
         <div>
@@ -400,7 +424,7 @@
       </div>
 
       <div id="reader" class="w-full rounded-xl overflow-hidden border border-slate-700 bg-slate-950"></div>
-      <p class="text-xs text-slate-400">وجه كاميرا الهاتف نحو كود الطالب (QR أو باركود) لتسجيل الحضور تلقائياً.</p>
+      <p class="text-xs text-slate-400">وجه كاميرا الهاتف نحو كود QR الخاص بالطالب لتسجيل الحضور تلقائياً.</p>
 
       <div class="pt-2">
         <button type="button" onclick="closeScannerModal()" class="w-full py-2.5 bg-slate-800 text-slate-300 text-xs font-bold rounded-xl hover:bg-slate-700">إغلاق الكاميرا</button>
@@ -809,7 +833,7 @@
       emptyState.classList.add('hidden');
 
       filtered.forEach(s => {
-        const studentCode = s.code || '---';
+        const studentCode = s.code || '1';
         const card = document.createElement('div');
         card.className = 'card-bg rounded-xl p-4 border border-slate-700/80 hover:border-amber-500 transition cursor-pointer flex items-center justify-between shadow-sm group';
         card.onclick = () => openProfileModal(s.id);
@@ -841,13 +865,25 @@
       if (!s) return;
 
       document.getElementById('profStudentName').textContent = s.name;
-      document.getElementById('profStudentCodeBadge').textContent = `كود: ${s.code || '---'}`;
+      document.getElementById('profStudentCodeBadge').textContent = `كود: ${s.code || '1'}`;
       document.getElementById('profStudentGroup').textContent = s.group_name || 'بدون مجموعة محددة';
       document.getElementById('profGradeBadge').textContent = gradeNames[s.grade];
       document.getElementById('profParentPhone').textContent = s.parent_phone;
       document.getElementById('profStudentPhone').textContent = s.student_phone || 'غير مسجل';
       document.getElementById('profFee').textContent = `${s.fee || 150} ج.م`;
       document.getElementById('profWhatsappLink').href = `https://wa.me/2${s.parent_phone}`;
+
+      // توليد QR Code للطالب داخلياً
+      const qrcodeContainer = document.getElementById('qrcode');
+      qrcodeContainer.innerHTML = '';
+      new QRCode(qrcodeContainer, {
+        text: String(s.code || '1'),
+        width: 120,
+        height: 120,
+        colorDark: "#000000",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.H
+      });
 
       document.getElementById('profEditBtn').onclick = () => openEditStudentModal(s.id);
       document.getElementById('profDeleteBtn').onclick = () => deleteStudent(s.id);
@@ -913,6 +949,10 @@
       document.getElementById('profileModal').classList.add('hidden');
     }
 
+    function printStudentQR() {
+      window.print();
+    }
+
     function openAttendanceModal(studentId) {
       const student = studentsData.find(s => s.id === studentId);
       if (!student) return;
@@ -965,8 +1005,15 @@
     function openAddStudentModal() {
       document.getElementById('editStudentId').value = '';
       document.getElementById('modalStudentTitle').textContent = 'إضافة طالب جديد';
-      const nextCode = (studentsData.length + 101).toString();
-      document.getElementById('newStudentCode').value = nextCode;
+      
+      // حساب الكود التلقائي التالي بدءاً من 1
+      let maxCode = 0;
+      studentsData.forEach(s => {
+        const c = parseInt(s.code);
+        if (!isNaN(c) && c > maxCode) maxCode = c;
+      });
+      document.getElementById('newStudentCode').value = String(maxCode + 1);
+
       document.getElementById('newStudentName').value = '';
       document.getElementById('newParentPhone').value = '';
       document.getElementById('newStudentPhone').value = '';
@@ -983,7 +1030,7 @@
       closeProfileModal();
       document.getElementById('editStudentId').value = student.id;
       document.getElementById('modalStudentTitle').textContent = 'تعديل بيانات الطالب';
-      document.getElementById('newStudentCode').value = student.code || '';
+      document.getElementById('newStudentCode').value = student.code || '1';
       document.getElementById('newStudentName').value = student.name || '';
       document.getElementById('newParentPhone').value = student.parent_phone || '';
       document.getElementById('newStudentPhone').value = student.student_phone || '';
@@ -1003,10 +1050,9 @@
       const editId = document.getElementById('editStudentId').value;
       
       if (editId) {
-        // تعديل طالب موجود
         const student = studentsData.find(s => s.id === editId);
         if (student) {
-          student.code = document.getElementById('newStudentCode').value.trim();
+          student.code = document.getElementById('newStudentCode').value.trim() || '1';
           student.name = document.getElementById('newStudentName').value.trim();
           student.parent_phone = document.getElementById('newParentPhone').value.trim();
           student.student_phone = document.getElementById('newStudentPhone').value.trim();
@@ -1021,10 +1067,9 @@
           showToast('تم تحديث بيانات الطالب بنجاح ✓');
         }
       } else {
-        // إضافة طالب جديد
         const newStudent = {
           id: 'st_' + Date.now(),
-          code: document.getElementById('newStudentCode').value.trim() || String(Math.floor(100 + Math.random() * 900)),
+          code: document.getElementById('newStudentCode').value.trim() || '1',
           name: document.getElementById('newStudentName').value.trim(),
           parent_phone: document.getElementById('newParentPhone').value.trim(),
           student_phone: document.getElementById('newStudentPhone').value.trim(),
@@ -1044,7 +1089,6 @@
       }
     }
 
-    // تشغيل كاميرا مسح الباركود / الكيو آر
     function openScannerModal() {
       document.getElementById('scannerModal').classList.remove('hidden');
       setTimeout(() => {
@@ -1080,11 +1124,9 @@
       
       if (student) {
         closeScannerModal();
-        // تسجيل حضور تلقائي اليوم
         const today = new Date().toISOString().split('T')[0];
         if (!student.attendance) student.attendance = [];
         
-        // التحقق إن متمش تسجيل حضور لنفس اليوم بالفعل
         student.attendance.push({
           status: 'present',
           quiz: null,
@@ -1221,7 +1263,7 @@
           div.className = 'flex items-center justify-between card-bg p-3 rounded-xl border border-red-900/40 text-xs';
           div.innerHTML = `
             <div>
-              <div class="font-bold text-slate-100">${s.name} <span class="text-[10px] text-amber-400">(كود: ${s.code || '---'})</span></div>
+              <div class="font-bold text-slate-100">${s.name} <span class="text-[10px] text-amber-400">(كود: ${s.code || '1'})</span></div>
               <div class="text-red-400 mt-0.5">الشهور المستحقة عليه: <strong>شهر ${monthsText}</strong></div>
               <div class="text-slate-400 text-[11px]">ولي الأمر: ${s.parent_phone}</div>
             </div>
@@ -1248,10 +1290,10 @@
           div.className = 'flex items-center justify-between card-bg p-3 rounded-xl border border-emerald-900/40 text-xs';
           div.innerHTML = `
             <div>
-              <div class="font-bold text-slate-100">${s.name} <span class="text-[10px] text-amber-400">(كود: ${s.code || '---'})</span></div>
+              <div class="font-bold text-slate-100">${s.name} <span class="text-[10px] text-amber-400">(كود: ${s.code || '1'})</span></div>
               <div class="text-emerald-400 mt-0.5">سدد مبلغ: <strong>${paidAmount} ج.م</strong> بتاريخ: ${payDate}</div>
             </div>
-            <span class="text-emerald-400 bg-emerald-950/80 px-2.5 py.1 rounded-full border border-emerald-800/50">تم الدفع ✓</span>
+            <span class="text-emerald-400 bg-emerald-950/80 px-2.5 py-1 rounded-full border border-emerald-800/50">تم الدفع ✓</span>
           `;
           paidContainer.appendChild(div);
         });
