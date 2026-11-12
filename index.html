@@ -22,7 +22,6 @@
       --text-main: #f8fafc;
       --text-sub: #cbd5e1;
       --text-muted: #94a3b8;
-      --bg-subcard: rgba(15, 23, 42, 0.7);
     }
 
     body.light-mode {
@@ -34,7 +33,6 @@
       --text-main: #0f172a;
       --text-sub: #334155;
       --text-muted: #64748b;
-      --bg-subcard: #f8fafc;
     }
 
     body {
@@ -46,10 +44,6 @@
 
     .gold-gradient {
       background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-    }
-
-    .gold-text {
-      color: #fbbf24;
     }
 
     .card-bg {
@@ -69,7 +63,6 @@
       outline: none;
     }
 
-    /* تكييف الألوان في الوضع الفاتح */
     body.light-mode .text-white { color: #0f172a !important; }
     body.light-mode .text-slate-100 { color: #1e293b !important; }
     body.light-mode .text-slate-200 { color: #334155 !important; }
@@ -77,14 +70,9 @@
     body.light-mode .text-slate-400 { color: #64748b !important; }
     body.light-mode .bg-slate-800 { background-color: #e2e8f0 !important; color: #1e293b !important; }
     body.light-mode .bg-slate-900 { background-color: #f1f5f9 !important; }
-    body.light-mode .bg-slate-900\/70 { background-color: #f8fafc !important; }
     body.light-mode .bg-slate-950\/50 { background-color: #ffffff !important; border: 1px solid #e2e8f0; }
     body.light-mode .border-slate-700,
     body.light-mode .border-slate-800 { border-color: #cbd5e1 !important; }
-    body.light-mode .gold-gradient,
-    body.light-mode .bg-indigo-600,
-    body.light-mode .bg-emerald-600 { color: #ffffff !important; }
-    body.light-mode .gold-gradient { color: #0f172a !important; }
 
     ::-webkit-scrollbar { width: 8px; }
     ::-webkit-scrollbar-track { background: var(--bg-main); }
@@ -106,7 +94,7 @@
   <!-- Hidden Input for Backup Restore -->
   <input type="file" id="restoreFileInput" accept=".json" class="hidden" onchange="handleRestoreBackup(event)">
 
-  <!-- Side Drawer Menu (قائمة الـ 3 شرط) -->
+  <!-- Side Drawer Menu (قائمة الإعدادات والنسخ) -->
   <div id="sideDrawerBackdrop" onclick="closeSideDrawer()" class="fixed inset-0 bg-black/60 backdrop-blur-xs z-40 hidden transition-opacity"></div>
   <aside id="sideDrawer" class="fixed top-0 right-0 h-full w-72 card-bg border-l border-slate-700 z-50 transform translate-x-full transition-transform duration-300 flex flex-col justify-between p-5 shadow-2xl">
     <div class="space-y-6">
@@ -126,7 +114,6 @@
       </div>
 
       <nav class="space-y-2.5">
-        <!-- تبديل وضع الدارك والفاتح -->
         <button onclick="toggleTheme()" class="w-full flex items-center justify-between p-3 rounded-xl bg-slate-800/70 hover:bg-slate-800 border border-slate-700/70 text-xs font-bold transition">
           <span class="flex items-center gap-2.5 text-slate-200">
             <i id="themeIcon" class="fa-solid fa-sun text-amber-400 text-sm"></i>
@@ -135,13 +122,11 @@
           <span class="text-[10px] px-2 py-0.5 rounded bg-slate-900 text-amber-400">تبديل</span>
         </button>
 
-        <!-- تنزيل نسخة احتياطية -->
         <button onclick="downloadBackup()" class="w-full flex items-center gap-3 p-3 rounded-xl bg-slate-800/70 hover:bg-slate-800 border border-slate-700/70 text-xs font-bold text-slate-200 transition">
           <i class="fa-solid fa-download text-emerald-400 text-sm"></i>
           <span>تنزيل نسخة احتياطية (Backup)</span>
         </button>
 
-        <!-- رفع نسخة احتياطية -->
         <button onclick="triggerRestoreBackup()" class="w-full flex items-center gap-3 p-3 rounded-xl bg-slate-800/70 hover:bg-slate-800 border border-slate-700/70 text-xs font-bold text-slate-200 transition">
           <i class="fa-solid fa-upload text-indigo-400 text-sm"></i>
           <span>رفع نسخة احتياطية (Restore)</span>
@@ -149,7 +134,6 @@
       </nav>
     </div>
 
-    <!-- زر تسجيل الخروج داخل القائمة -->
     <div class="border-t border-slate-700 pt-4">
       <button onclick="handleLogout()" class="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-red-950/60 hover:bg-red-900/80 border border-red-800/60 text-red-300 text-xs font-bold transition">
         <i class="fa-solid fa-right-from-bracket"></i>
@@ -210,7 +194,6 @@
       <header class="card-bg border-b border-slate-700 sticky top-0 z-30">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div class="flex items-center space-x-3 space-x-reverse">
-            <!-- زر الـ 3 شرط -->
             <button onclick="openSideDrawer()" title="القائمة والإعدادات" class="bg-slate-800 hover:bg-slate-700 text-slate-200 w-10 h-10 rounded-xl border border-slate-700 flex items-center justify-center transition">
               <i class="fa-solid fa-bars text-base"></i>
             </button>
@@ -407,7 +390,7 @@
         <div class="space-y-2 no-print">
           <div class="flex items-center justify-between">
             <h4 class="font-bold text-indigo-400 text-xs flex items-center gap-1.5">
-              <i class="fa-solid fa-clock-rotate-left"></i> سجل الحضور والتسميع
+              <i class="fa-solid fa-clock-rotate-left"></i> سجل الحضور والتسميع (اضغط على السجل للتعديل)
             </h4>
             <span id="profAttendanceRatio" class="text-[11px] font-bold text-slate-400"></span>
           </div>
@@ -424,11 +407,11 @@
     </div>
   </div>
 
-  <!-- Modal: Attendance & Quiz -->
+  <!-- Modal: Attendance & Quiz (إضافة أو تعديل سجل حصة) -->
   <div id="attendanceModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
     <div class="card-bg rounded-2xl max-w-md w-full p-6 space-y-4 border border-slate-700 shadow-2xl">
       <div class="flex items-center justify-between border-b border-slate-700 pb-3">
-        <h3 class="font-bold text-slate-100 flex items-center gap-2">
+        <h3 id="attModalTitle" class="font-bold text-slate-100 flex items-center gap-2">
           <i class="fa-solid fa-clipboard-user text-amber-400"></i> تسجيل حضور وتسميع
         </h3>
         <button onclick="closeAttendanceModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
@@ -436,6 +419,7 @@
 
       <form id="attendanceForm" onsubmit="handleAttendanceSubmit(event)" class="space-y-4">
         <input type="hidden" id="attStudentId">
+        <input type="hidden" id="attRecordIndex" value="-1">
         
         <div>
           <label class="block text-xs font-medium text-slate-300 mb-1">اسم الطالب</label>
@@ -705,7 +689,6 @@
       checkAuthStatus();
     });
 
-    // إدارة المظهر (الوضع الداكن / الفاتح)
     function initTheme() {
       const savedTheme = localStorage.getItem('mr_theme') || 'dark';
       if (savedTheme === 'light') {
@@ -736,7 +719,6 @@
       }
     }
 
-    // إدارة قائمة الـ 3 شرط (Side Drawer)
     function openSideDrawer() {
       document.getElementById('sideDrawerBackdrop').classList.remove('hidden');
       document.getElementById('sideDrawer').classList.remove('translate-x-full');
@@ -747,7 +729,6 @@
       document.getElementById('sideDrawer').classList.add('translate-x-full');
     }
 
-    // تنزيل نسخة احتياطية (Backup)
     function downloadBackup() {
       try {
         const backupObj = {
@@ -770,7 +751,6 @@
       }
     }
 
-    // رفع نسخة احتياطية (Restore)
     function triggerRestoreBackup() {
       document.getElementById('restoreFileInput').click();
     }
@@ -1116,12 +1096,10 @@
       document.getElementById('profFee').textContent = `${s.fee || 150} ج.م`;
       document.getElementById('profWhatsappLink').href = `https://wa.me/2${s.parent_phone}`;
 
-      // تحديد الشهر الحالي تلقائياً في التقرير الشهري
       const currentMonth = String(new Date().getMonth() + 1);
       const profMonthSelect = document.getElementById('profReportMonthSelect');
       if (profMonthSelect) profMonthSelect.value = currentMonth;
 
-      // توليد QR Code للطالب داخلياً
       const qrcodeContainer = document.getElementById('qrcode');
       qrcodeContainer.innerHTML = '';
       new QRCode(qrcodeContainer, {
@@ -1150,16 +1128,18 @@
         attendance.slice().reverse().forEach((att, idx) => {
           const realIdx = attendance.length - 1 - idx;
           const div = document.createElement('div');
-          div.className = 'flex items-center justify-between bg-slate-900/70 px-3 py-2 rounded-lg border border-slate-800 text-xs';
+          // جعل السجل قابلاً للضغط لتعديله
+          div.className = 'flex items-center justify-between bg-slate-900/70 hover:bg-slate-800 px-3 py-2 rounded-lg border border-slate-800 text-xs cursor-pointer transition';
+          div.title = 'اضغط لتعديل هذا السجل';
           div.innerHTML = `
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 flex-grow" onclick="openAttendanceModal('${s.id}', ${realIdx})">
               <span class="w-2 h-2 rounded-full ${att.status === 'present' ? 'bg-emerald-500' : 'bg-red-500'}"></span>
               <span class="font-bold ${att.status === 'present' ? 'text-emerald-400' : 'text-red-400'}">${att.status === 'present' ? 'حاضر' : 'غائب'}</span>
               <span class="text-slate-400 text-[11px]">(${att.date})</span>
             </div>
-            <div class="flex items-center gap-2">
-              ${att.quiz ? `<span class="bg-indigo-950 text-indigo-300 px-2 py-0.5 rounded border border-indigo-800/60 font-bold">التسميع: ${att.quiz}</span>` : '<span class="text-slate-600 text-[10px]">بدون تسميع</span>'}
-              <button onclick="deleteAttendanceRecord('${s.id}', ${realIdx})" class="text-slate-600 hover:text-red-400 transition" title="حذف السجل"><i class="fa-solid fa-xmark"></i></button>
+            <div class="flex items-center gap-3">
+              ${att.quiz ? `<span class="bg-indigo-950 text-indigo-300 px-2 py-0.5 rounded border border-indigo-800/60 font-bold" onclick="openAttendanceModal('${s.id}', ${realIdx})">التسميع: ${att.quiz}</span>` : '<span class="text-slate-600 text-[10px]" onclick="openAttendanceModal(\''+s.id+'\', '+realIdx+')">بدون تسميع</span>'}
+              <button onclick="event.stopPropagation(); deleteAttendanceRecord('${s.id}', ${realIdx})" class="text-slate-600 hover:text-red-400 transition" title="حذف السجل"><i class="fa-solid fa-xmark text-sm"></i></button>
             </div>
           `;
           attList.appendChild(div);
@@ -1192,7 +1172,6 @@
       }
     }
 
-    // إرسال تقرير شهري شامل لولي الأمر عبر واتساب
     function sendStudentMonthlyWhatsApp() {
       const s = studentsData.find(x => x.id === activeProfileStudentId);
       if (!s) return;
@@ -1202,7 +1181,6 @@
       const paddedMonth = selectedMonth.padStart(2, '0');
 
       const allAttendance = s.attendance || [];
-      // تصفية سجلات الشهر المختار (أو عرض الإجمالي لو مفيش تواريخ مطابقة)
       const monthRecords = allAttendance.filter(a => a.date && a.date.split('-')[1] === paddedMonth);
       const recordsToReport = monthRecords.length > 0 ? monthRecords : allAttendance;
 
@@ -1250,15 +1228,27 @@
       window.print();
     }
 
-    function openAttendanceModal(studentId) {
+    // فتح نافذة الحضور (سواء للإضافة أو التعديل)
+    function openAttendanceModal(studentId, recordIndex = -1) {
       const student = studentsData.find(s => s.id === studentId);
       if (!student) return;
 
       document.getElementById('attStudentId').value = studentId;
       document.getElementById('attStudentName').value = student.name;
-      document.getElementById('attStatus').value = 'present';
-      document.getElementById('attQuizGrade').value = '';
-      document.getElementById('attDate').value = new Date().toISOString().split('T')[0];
+      document.getElementById('attRecordIndex').value = recordIndex;
+
+      if (recordIndex >= 0 && student.attendance && student.attendance[recordIndex]) {
+        const record = student.attendance[recordIndex];
+        document.getElementById('attModalTitle').innerHTML = '<i class="fa-solid.fa-pen-to-square text-amber-400"></i> تعديل سجل الحضور والتسميع';
+        document.getElementById('attStatus').value = record.status || 'present';
+        document.getElementById('attQuizGrade').value = record.quiz || '';
+        document.getElementById('attDate').value = record.date || new Date().toISOString().split('T')[0];
+      } else {
+        document.getElementById('attModalTitle').innerHTML = '<i class="fa-solid fa-clipboard-user text-amber-400"></i> تسجيل حضور وتسميع';
+        document.getElementById('attStatus').value = 'present';
+        document.getElementById('attQuizGrade').value = '';
+        document.getElementById('attDate').value = new Date().toISOString().split('T')[0];
+      }
 
       document.getElementById('attendanceModal').classList.remove('hidden');
     }
@@ -1270,6 +1260,7 @@
     async function handleAttendanceSubmit(e) {
       e.preventDefault();
       const studentId = document.getElementById('attStudentId').value;
+      const recordIndex = parseInt(document.getElementById('attRecordIndex').value);
       const status = document.getElementById('attStatus').value;
       const quiz = document.getElementById('attQuizGrade').value.trim();
       const date = document.getElementById('attDate').value;
@@ -1277,16 +1268,28 @@
       const student = studentsData.find(s => s.id === studentId);
       if (student) {
         if (!student.attendance) student.attendance = [];
-        student.attendance.push({
-          status,
-          quiz: quiz || null,
-          date
-        });
+
+        if (recordIndex >= 0 && student.attendance[recordIndex]) {
+          // تعديل السجل القائم
+          student.attendance[recordIndex] = {
+            status,
+            quiz: quiz || null,
+            date
+          };
+          showToast('تم تحديث سجل الحضور بنجاح ✓');
+        } else {
+          // إضافة سجل جديد
+          student.attendance.push({
+            status,
+            quiz: quiz || null,
+            date
+          });
+          showToast(`تم تسجيل ${status === 'present' ? 'الحضور' : 'الغياب'} للطالب: ${student.name} ✓`);
+        }
 
         closeAttendanceModal();
         if (activeProfileStudentId) renderProfileContent(student.id);
         await saveStudentToSupabase(student);
-        showToast(`تم تسجيل ${status === 'present' ? 'الحضور' : 'الغياب'} للطالب: ${student.name} ✓`);
       }
     }
 
@@ -1296,6 +1299,7 @@
         student.attendance.splice(index, 1);
         renderProfileContent(student.id);
         await saveStudentToSupabase(student);
+        showToast('تم حذف سجل الحضور بنجاح');
       }
     }
 
