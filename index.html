@@ -8,6 +8,7 @@
   <link rel="manifest" href="./manifest.json">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
   <style>
@@ -120,6 +121,10 @@
               <i class="fa-solid fa-rotate" id="syncIcon"></i>
               <span class="hidden sm:inline">مزامنة</span>
             </button>
+            <button onclick="openScannerModal()" title="مسح كيو آر / باركود الحضور" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-xl text-sm transition flex items-center space-x-1 space-x-reverse shadow-md">
+              <i class="fa-solid fa-camera"></i>
+              <span class="hidden sm:inline">مسح بالكاميرا</span>
+            </button>
             <button onclick="openAddStudentModal()" class="gold-gradient text-slate-900 px-4 py-2 rounded-xl font-bold text-sm hover:opacity-90 transition flex items-center space-x-2 space-x-reverse">
               <i class="fa-solid fa-plus"></i>
               <span>إضافة طالب</span>
@@ -211,6 +216,9 @@
           <h3 class="font-bold text-slate-100 text-base">بيانات وملف الطالب</h3>
         </div>
         <div class="flex items-center gap-3">
+          <button id="profEditBtn" class="text-slate-400 hover:text-amber-400 text-sm transition" title="تعديل بيانات الطالب">
+            <i class="fa-solid fa-pen-to-square"></i>
+          </button>
           <button id="profDeleteBtn" class="text-slate-400 hover:text-red-400 text-sm transition" title="حذف الطالب">
             <i class="fa-solid fa-trash-can"></i>
           </button>
@@ -318,18 +326,20 @@
     </div>
   </div>
 
-  <!-- Modal: Add Student -->
+  <!-- Modal: Add / Edit Student -->
   <div id="addStudentModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
     <div class="card-bg rounded-2xl max-w-lg w-full p-6 space-y-4 border border-slate-700">
       <div class="flex items-center justify-between border-b border-slate-700 pb-3">
-        <h3 class="font-bold text-slate-100">إضافة طالب جديد</h3>
+        <h3 id="modalStudentTitle" class="font-bold text-slate-100">إضافة طالب جديد</h3>
         <button onclick="closeAddStudentModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
 
       <form id="addStudentForm" onsubmit="handleAddStudent(event)" class="space-y-3">
+        <input type="hidden" id="editStudentId">
+        
         <div>
-          <label class="block text-xs font-medium text-slate-300 mb-1">كود الطالب (تلقائي أو مخصص)</label>
-          <input type="text" id="newStudentCode" class="w-full p-2.5 rounded-xl input-style text-sm font-bold text-amber-400" placeholder="مثال: 101">
+          <label class="block text-xs font-medium text-slate-300 mb-1">كود الطالب</label>
+          <input type="text" id="newStudentCode" required class="w-full p-2.5 rounded-xl input-style text-sm font-bold text-amber-400" placeholder="مثال: 101">
         </div>
 
         <div>
@@ -373,9 +383,28 @@
 
         <div class="pt-2 flex justify-end space-x-2 space-x-reverse">
           <button type="button" onclick="closeAddStudentModal()" class="px-4 py-2 bg-slate-800 text-slate-300 text-xs font-bold rounded-xl hover:bg-slate-700">إلغاء</button>
-          <button type="submit" class="px-5 py-2 gold-gradient text-slate-900 text-xs font-bold rounded-xl hover:opacity-90">حفظ الطالب فوراً</button>
+          <button type="submit" class="px-5 py-2 gold-gradient text-slate-900 text-xs font-bold rounded-xl hover:opacity-90">حفظ البيانات</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Modal: QR / Barcode Scanner -->
+  <div id="scannerModal" class="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden">
+    <div class="card-bg rounded-2xl max-w-md w-full p-5 space-y-4 border border-slate-700 text-center">
+      <div class="flex items-center justify-between border-b border-slate-700 pb-3">
+        <h3 class="font-bold text-slate-100 flex items-center gap-2">
+          <i class="fa-solid fa-camera text-indigo-400"></i> مسح كود الطالب للحضور السريع
+        </h3>
+        <button onclick="closeScannerModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <div id="reader" class="w-full rounded-xl overflow-hidden border border-slate-700 bg-slate-950"></div>
+      <p class="text-xs text-slate-400">وجه كاميرا الهاتف نحو كود الطالب (QR أو باركود) لتسجيل الحضور تلقائياً.</p>
+
+      <div class="pt-2">
+        <button type="button" onclick="closeScannerModal()" class="w-full py-2.5 bg-slate-800 text-slate-300 text-xs font-bold rounded-xl hover:bg-slate-700">إغلاق الكاميرا</button>
+      </div>
     </div>
   </div>
 
@@ -509,6 +538,7 @@
     let currentGrade = '1_prep';
     let studentsData = [];
     let activeProfileStudentId = null;
+    let html5QrCode = null;
 
     const gradeNames = {
       '1_prep': 'الأول الإعدادي',
@@ -819,6 +849,7 @@
       document.getElementById('profFee').textContent = `${s.fee || 150} ج.م`;
       document.getElementById('profWhatsappLink').href = `https://wa.me/2${s.parent_phone}`;
 
+      document.getElementById('profEditBtn').onclick = () => openEditStudentModal(s.id);
       document.getElementById('profDeleteBtn').onclick = () => deleteStudent(s.id);
       document.getElementById('profAttendanceBtn').onclick = () => openAttendanceModal(s.id);
 
@@ -916,8 +947,9 @@
         });
 
         closeAttendanceModal();
-        renderProfileContent(student.id);
+        if (activeProfileStudentId) renderProfileContent(student.id);
         await saveStudentToSupabase(student);
+        showToast(`تم تسجيل الحضور للطالب: ${student.name} ✓`);
       }
     }
 
@@ -931,10 +963,34 @@
     }
 
     function openAddStudentModal() {
-      // توليد كود تلقائي جديد بناء على عدد الطلاب
+      document.getElementById('editStudentId').value = '';
+      document.getElementById('modalStudentTitle').textContent = 'إضافة طالب جديد';
       const nextCode = (studentsData.length + 101).toString();
       document.getElementById('newStudentCode').value = nextCode;
+      document.getElementById('newStudentName').value = '';
+      document.getElementById('newParentPhone').value = '';
+      document.getElementById('newStudentPhone').value = '';
       document.getElementById('newStudentGrade').value = currentGrade;
+      document.getElementById('newStudentGroup').value = '';
+      document.getElementById('newStudentFee').value = 150;
+      document.getElementById('addStudentModal').classList.remove('hidden');
+    }
+
+    function openEditStudentModal(studentId) {
+      const student = studentsData.find(s => s.id === studentId);
+      if (!student) return;
+
+      closeProfileModal();
+      document.getElementById('editStudentId').value = student.id;
+      document.getElementById('modalStudentTitle').textContent = 'تعديل بيانات الطالب';
+      document.getElementById('newStudentCode').value = student.code || '';
+      document.getElementById('newStudentName').value = student.name || '';
+      document.getElementById('newParentPhone').value = student.parent_phone || '';
+      document.getElementById('newStudentPhone').value = student.student_phone || '';
+      document.getElementById('newStudentGrade').value = student.grade || currentGrade;
+      document.getElementById('newStudentGroup').value = student.group_name || '';
+      document.getElementById('newStudentFee').value = student.fee || 150;
+
       document.getElementById('addStudentModal').classList.remove('hidden');
     }
 
@@ -944,25 +1000,103 @@
 
     async function handleAddStudent(e) {
       e.preventDefault();
-      const newStudent = {
-        id: 'st_' + Date.now(),
-        code: document.getElementById('newStudentCode').value.trim() || String(Math.floor(100 + Math.random() * 900)),
-        name: document.getElementById('newStudentName').value.trim(),
-        parent_phone: document.getElementById('newParentPhone').value.trim(),
-        student_phone: document.getElementById('newStudentPhone').value.trim(),
-        grade: document.getElementById('newStudentGrade').value,
-        group_name: document.getElementById('newStudentGroup').value.trim(),
-        fee: Number(document.getElementById('newStudentFee').value) || 150,
-        payments: {},
-        attendance: []
-      };
+      const editId = document.getElementById('editStudentId').value;
+      
+      if (editId) {
+        // تعديل طالب موجود
+        const student = studentsData.find(s => s.id === editId);
+        if (student) {
+          student.code = document.getElementById('newStudentCode').value.trim();
+          student.name = document.getElementById('newStudentName').value.trim();
+          student.parent_phone = document.getElementById('newParentPhone').value.trim();
+          student.student_phone = document.getElementById('newStudentPhone').value.trim();
+          student.grade = document.getElementById('newStudentGrade').value;
+          student.group_name = document.getElementById('newStudentGroup').value.trim();
+          student.fee = Number(document.getElementById('newStudentFee').value) || 150;
 
-      studentsData.push(newStudent);
-      renderStudents();
-      closeAddStudentModal();
-      document.getElementById('addStudentForm').reset();
+          closeAddStudentModal();
+          renderStudents();
+          openProfileModal(student.id);
+          await saveStudentToSupabase(student);
+          showToast('تم تحديث بيانات الطالب بنجاح ✓');
+        }
+      } else {
+        // إضافة طالب جديد
+        const newStudent = {
+          id: 'st_' + Date.now(),
+          code: document.getElementById('newStudentCode').value.trim() || String(Math.floor(100 + Math.random() * 900)),
+          name: document.getElementById('newStudentName').value.trim(),
+          parent_phone: document.getElementById('newParentPhone').value.trim(),
+          student_phone: document.getElementById('newStudentPhone').value.trim(),
+          grade: document.getElementById('newStudentGrade').value,
+          group_name: document.getElementById('newStudentGroup').value.trim(),
+          fee: Number(document.getElementById('newStudentFee').value) || 150,
+          payments: {},
+          attendance: []
+        };
 
-      await saveStudentToSupabase(newStudent);
+        studentsData.push(newStudent);
+        renderStudents();
+        closeAddStudentModal();
+        document.getElementById('addStudentForm').reset();
+        await saveStudentToSupabase(newStudent);
+        showToast('تم حفظ الطالب الجديد بنجاح ✓');
+      }
+    }
+
+    // تشغيل كاميرا مسح الباركود / الكيو آر
+    function openScannerModal() {
+      document.getElementById('scannerModal').classList.remove('hidden');
+      setTimeout(() => {
+        html5QrCode = new Html5Qrcode("reader");
+        html5QrCode.start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: { width: 250, height: 250 } },
+          (decodedText) => {
+            handleScannedCode(decodedText);
+          },
+          (errorMessage) => {}
+        ).catch(err => {
+          showToast('تعذر تشغيل الكاميرا، تأكد من إعطاء الصلاحية', 'error');
+        });
+      }, 300);
+    }
+
+    function closeScannerModal() {
+      if (html5QrCode) {
+        html5QrCode.stop().then(() => {
+          html5QrCode.clear();
+        }).catch(err => {}).finally(() => {
+          document.getElementById('scannerModal').classList.add('hidden');
+        });
+      } else {
+        document.getElementById('scannerModal').classList.add('hidden');
+      }
+    }
+
+    async function handleScannedCode(code) {
+      const cleanCode = code.trim();
+      const student = studentsData.find(s => s.code === cleanCode);
+      
+      if (student) {
+        closeScannerModal();
+        // تسجيل حضور تلقائي اليوم
+        const today = new Date().toISOString().split('T')[0];
+        if (!student.attendance) student.attendance = [];
+        
+        // التحقق إن متمش تسجيل حضور لنفس اليوم بالفعل
+        student.attendance.push({
+          status: 'present',
+          quiz: null,
+          date: today
+        });
+
+        await saveStudentToSupabase(student);
+        showToast(`تم تسجيل حضور الطالب: ${student.name} (كود: ${cleanCode}) بنجاح! ✓`);
+        openProfileModal(student.id);
+      } else {
+        showToast(`الكود (${cleanCode}) غير مسجل لأي طالب!`, 'error');
+      }
     }
 
     async function deleteStudent(id) {
@@ -1032,6 +1166,7 @@
         }
 
         await saveStudentToSupabase(student);
+        showToast('تم تسجيل وإثبات الدفع بنجاح ✓');
       }
     }
 
@@ -1116,7 +1251,7 @@
               <div class="font-bold text-slate-100">${s.name} <span class="text-[10px] text-amber-400">(كود: ${s.code || '---'})</span></div>
               <div class="text-emerald-400 mt-0.5">سدد مبلغ: <strong>${paidAmount} ج.م</strong> بتاريخ: ${payDate}</div>
             </div>
-            <span class="text-emerald-400 bg-emerald-950/80 px-2.5 py-1 rounded-full border border-emerald-800/50">تم الدفع ✓</span>
+            <span class="text-emerald-400 bg-emerald-950/80 px-2.5 py.1 rounded-full border border-emerald-800/50">تم الدفع ✓</span>
           `;
           paidContainer.appendChild(div);
         });
