@@ -1299,7 +1299,6 @@
       }
     }
 
-    // دالة لحساب وتوليد التالي لكود الصف الحالي تلقائياً
     function getNextCodeForGrade(gradeKey) {
       let maxNum = 0;
       studentsData.forEach(s => {
@@ -1316,11 +1315,7 @@
     function openAddStudentModal() {
       document.getElementById('editStudentId').value = '';
       document.getElementById('modalStudentTitle').textContent = 'إضافة طالب جديد';
-      
-      // تعيين الصف المختار حالياً كافتراضي في نافذة الإضافة
       document.getElementById('newStudentGrade').value = currentGrade;
-      
-      // جلب وتسجيل أول كود متاح لهذا الصف
       document.getElementById('newStudentCode').value = getNextCodeForGrade(currentGrade);
 
       document.getElementById('newStudentName').value = '';
@@ -1331,11 +1326,9 @@
       document.getElementById('addStudentModal').classList.remove('hidden');
     }
 
-    // عند تغيير الصف الدراسي داخل نافذة الإضافة، نقترح كود جديد خاص بهذا الصف الجديد
     function onGradeChangeInModal() {
       const selectedGrade = document.getElementById('newStudentGrade').value;
       const editId = document.getElementById('editStudentId').value;
-      // نقترح الكود فقط لو كنا في وضع إضافة طالب جديد
       if (!editId) {
         document.getElementById('newStudentCode').value = getNextCodeForGrade(selectedGrade);
       }
@@ -1366,15 +1359,31 @@
     async function handleAddStudent(e) {
       e.preventDefault();
       const editId = document.getElementById('editStudentId').value;
+      const inputCode = document.getElementById('newStudentCode').value.trim();
+      const inputName = document.getElementById('newStudentName').value.trim();
+      const targetGrade = document.getElementById('newStudentGrade').value;
+
+      // التحقق من تكرار الكود أو الاسم داخل نفس الصف الدراسي
+      const duplicateCode = studentsData.find(s => String(s.code) === inputCode && s.grade === targetGrade && s.id !== editId);
+      if (duplicateCode) {
+        showToast(`خطأ: الكود (${inputCode}) مستخدم بالفعل للطالب (${duplicateCode.name}) في هذا الصف!`, 'error');
+        return;
+      }
+
+      const duplicateName = studentsData.find(s => s.name.trim().toLowerCase() === inputName.toLowerCase() && s.grade === targetGrade && s.id !== editId);
+      if (duplicateName) {
+        showToast(`تنبيه: الطالب (${inputName}) مسجل مسبقاً في هذا الصف (كود: ${duplicateName.code})!`, 'error');
+        return;
+      }
       
       if (editId) {
         const student = studentsData.find(s => s.id === editId);
         if (student) {
-          student.code = document.getElementById('newStudentCode').value.trim() || '1';
-          student.name = document.getElementById('newStudentName').value.trim();
+          student.code = inputCode || '1';
+          student.name = inputName;
           student.parent_phone = document.getElementById('newParentPhone').value.trim();
           student.student_phone = document.getElementById('newStudentPhone').value.trim();
-          student.grade = document.getElementById('newStudentGrade').value;
+          student.grade = targetGrade;
           student.group_name = document.getElementById('newStudentGroup').value.trim();
           student.fee = Number(document.getElementById('newStudentFee').value) || 150;
 
@@ -1385,11 +1394,10 @@
           showToast('تم تحديث بيانات الطالب بنجاح ✓');
         }
       } else {
-        const targetGrade = document.getElementById('newStudentGrade').value;
         const newStudent = {
           id: 'st_' + Date.now(),
-          code: document.getElementById('newStudentCode').value.trim() || getNextCodeForGrade(targetGrade),
-          name: document.getElementById('newStudentName').value.trim(),
+          code: inputCode || getNextCodeForGrade(targetGrade),
+          name: inputName,
           parent_phone: document.getElementById('newParentPhone').value.trim(),
           student_phone: document.getElementById('newStudentPhone').value.trim(),
           grade: targetGrade,
@@ -1439,7 +1447,6 @@
 
     async function handleScannedCode(code) {
       const cleanCode = code.trim();
-      // البحث في الصف الحالي أو في كل الطلاب
       const student = studentsData.find(s => String(s.code) === cleanCode && s.grade === currentGrade) || studentsData.find(s => String(s.code) === cleanCode);
       
       if (student) {
@@ -1510,7 +1517,7 @@
       const studentId = document.getElementById('payStudentId').value;
       const month = document.getElementById('payMonthSelect').value;
       const timestamp = document.getElementById('payTimestamp').value;
-      const amountPaid = Number(document.getElementById('payAmountInput.value')) || Number(document.getElementById('payAmountInput').value) || 0;
+      const amountPaid = Number(document.getElementById('payAmountInput').value) || 0;
 
       const student = studentsData.find(s => s.id === studentId);
       if (student) {
@@ -1559,10 +1566,13 @@
           const unpaidMonths = [];
           for (let m = 1; m <= month; m++) {
             if (!payments[m] || !payments[m].is_paid) {
+              unpaidMonths.5 && unpaidMonths.push(m); // Safe push
               unpaidMonths.push(m);
             }
           }
-          unpaidList.push({ student: s, unpaidMonths });
+          // إزالة التكرار المحتمل للشهور
+          const uniqueMonths = [...new Set(unpaidMonths)];
+          unpaidList.push({ student: s, unpaidMonths: uniqueMonths });
         }
       });
 
