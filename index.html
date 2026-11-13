@@ -282,13 +282,20 @@
           </div>
         </div>
 
-        <!-- Controls Bar -->
+        <!-- Controls Bar (شامل البحث + فلتر المجموعات الجديد) -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div class="md:col-span-2 relative">
-            <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400">
-              <i class="fa-solid fa-magnifying-glass"></i>
-            </span>
-            <input type="text" id="searchInput" oninput="renderStudents()" placeholder="ابحث باسم الطالب أو بالكود..." class="w-full pr-10 pl-4 py-3 rounded-xl input-style text-sm">
+          <div class="md:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <div class="sm:col-span-2 relative">
+              <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400">
+                <i class="fa-solid fa-magnifying-glass"></i>
+              </span>
+              <input type="text" id="searchInput" oninput="renderStudents()" placeholder="ابحث باسم الطالب أو بالكود..." class="w-full pr-10 pl-4 py-3 rounded-xl input-style text-sm">
+            </div>
+            <div>
+              <select id="groupFilterSelect" onchange="renderStudents()" class="w-full py-3 px-2 rounded-xl input-style text-xs font-bold">
+                <option value="all">كل المجموعات</option>
+              </select>
+            </div>
           </div>
 
           <button onclick="openReportModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl text-sm transition flex items-center justify-center space-x-2 space-x-reverse shadow-lg">
@@ -951,10 +958,15 @@
 
     async function markAbsentTodayAutomatically() {
       const today = new Date().toISOString().split('T')[0];
-      const gradeStudents = studentsData.filter(s => s.grade === currentGrade);
+      const selectedGroup = document.getElementById('groupFilterSelect').value;
+      
+      let gradeStudents = studentsData.filter(s => s.grade === currentGrade);
+      if (selectedGroup !== 'all') {
+        gradeStudents = gradeStudents.filter(s => (s.group_name || 'عام') === selectedGroup);
+      }
 
       if (gradeStudents.length === 0) {
-        showToast('لا يوجد طلاب في هذا الصف حالياً', 'error');
+        showToast('لا يوجد طلاب في هذا الصف أو المجموعة حالياً', 'error');
         return;
       }
 
@@ -964,11 +976,11 @@
       });
 
       if (unrecordedStudents.length === 0) {
-        showToast('جميع طلاب الصف مسجل لهم حضور أو غياب اليوم بالفعل ✓');
+        showToast('جميع الطلاب مسجل لهم حضور أو غياب اليوم بالفعل ✓');
         return;
       }
 
-      if (!confirm(`يوجد عدد (${unrecordedStudents.length}) طالب في (${gradeNames[currentGrade]}) لم يسجلوا حضوراً اليوم (${today}). هل تريد تسجيلهم (غائب) تلقائياً؟`)) {
+      if (!confirm(`يوجد عدد (${unrecordedStudents.length}) طالب لم يسجلوا حضوراً اليوم (${today}). هل تريد تسجيلهم (غائب) تلقائياً؟`)) {
         return;
       }
 
@@ -1196,6 +1208,7 @@
 
           studentsData = importedStudents;
           localStorage.setItem('mr_students_backup', JSON.stringify(studentsData));
+          updateGroupFilterOptions();
           renderStudents();
           closeSideDrawer();
 
@@ -1283,6 +1296,7 @@
       if (local) {
         try {
           studentsData = JSON.parse(local);
+          updateGroupFilterOptions();
           renderStudents();
         } catch (e) {}
       }
@@ -1375,6 +1389,7 @@
           if (queue.length === 0) {
             studentsData = data;
             localStorage.setItem('mr_students_backup', JSON.stringify(studentsData));
+            updateGroupFilterOptions();
             renderStudents();
             if (activeProfileStudentId) renderProfileContent(activeProfileStudentId);
           }
@@ -1430,7 +1445,31 @@
       }
 
       document.getElementById('currentGradeTitle').textContent = gradeNames[gradeKey];
+      updateGroupFilterOptions();
       renderStudents();
+    }
+
+    function updateGroupFilterOptions() {
+      const select = document.getElementById('groupFilterSelect');
+      if (!select) return;
+      const currentVal = select.value;
+      select.innerHTML = '<option value="all">كل المجموعات</option>';
+
+      const gradeStudents = studentsData.filter(s => s.grade === currentGrade);
+      const groups = [...new Set(gradeStudents.map(s => s.group_name || 'عام'))];
+
+      groups.forEach(g => {
+        const opt = document.createElement('option');
+        opt.value = g;
+        opt.textContent = g;
+        select.appendChild(opt);
+      });
+
+      if (groups.includes(currentVal)) {
+        select.value = currentVal;
+      } else {
+        select.value = 'all';
+      }
     }
 
     function calculateFinancials() {
@@ -1462,14 +1501,16 @@
       const grid = document.getElementById('studentsGrid');
       const emptyState = document.getElementById('emptyState');
       const search = document.getElementById('searchInput').value.trim().toLowerCase();
+      const selectedGroup = document.getElementById('groupFilterSelect').value;
 
       grid.innerHTML = '';
       calculateFinancials();
 
       const filtered = studentsData.filter(s => {
         const matchesGrade = s.grade === currentGrade;
+        const matchesGroup = selectedGroup === 'all' || (s.group_name || 'عام') === selectedGroup;
         const matchesSearch = !search || s.name.toLowerCase().includes(search) || (s.code && String(s.code).toLowerCase().includes(search));
-        return matchesGrade && matchesSearch;
+        return matchesGrade && matchesGroup && matchesSearch;
       });
 
       document.getElementById('studentCountBadge').textContent = `${filtered.length} طالب`;
@@ -1813,6 +1854,7 @@
           student.fee = Number(document.getElementById('newStudentFee').value) || 150;
 
           closeAddStudentModal();
+          updateGroupFilterOptions();
           renderStudents();
           openProfileModal(student.id);
           await saveStudentToSupabase(student);
@@ -1833,6 +1875,7 @@
         };
 
         studentsData.push(newStudent);
+        updateGroupFilterOptions();
         renderStudents();
         closeAddStudentModal();
         document.getElementById('addStudentForm').reset();
@@ -1928,6 +1971,7 @@
       if (confirm('هل أنت متأكد من حذف هذا الطالب نهائياً؟')) {
         studentsData = studentsData.filter(s => s.id !== id);
         closeProfileModal();
+        updateGroupFilterOptions();
         renderStudents();
         localStorage.setItem('mr_students_backup', JSON.stringify(studentsData));
         
