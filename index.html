@@ -147,10 +147,9 @@
           <span>رفع نسخة احتياطية (Restore)</span>
         </button>
 
-        <!-- زرار مشاركة التطبيق -->
         <button onclick="shareApplication()" class="w-full flex items-center gap-3 p-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/40 font-bold text-amber-400 transition">
           <i class="fa-solid fa-share-nodes text-sm"></i>
-          <span>مشاركة التطبيق </span>
+          <span>مشاركة التطبيق</span>
         </button>
       </nav>
     </div>
@@ -644,7 +643,7 @@
         <input type="hidden" id="editStudentId">
         
         <div>
-          <label class="block text-xs font-medium text-slate-300 mb-1"> كود الطالب </label>
+          <label class="block text-xs font-medium text-slate-300 mb-1">كود الطالب</label>
           <input type="text" id="newStudentCode" required class="w-full p-2.5 rounded-xl input-style text-sm font-bold text-amber-400" placeholder="1">
         </div>
 
@@ -711,7 +710,7 @@
       <div class="pt-2 flex gap-2">
         <button type="button" id="torchToggleBtn" onclick="toggleScannerTorch()" class="flex-1 py-2.5 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/50 text-amber-300 text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition">
           <i class="fa-solid fa-bolt"></i>
-          <span id="torchBtnText">Coming soon</span>
+          <span id="torchBtnText">تشغيل الفلاش</span>
         </button>
         <button type="button" onclick="closeScannerModal()" class="flex-1 py-2.5 bg-slate-800 text-slate-300 text-xs font-bold rounded-xl hover:bg-slate-700">إغلاق الكاميرا</button>
       </div>
@@ -927,7 +926,6 @@
       document.getElementById('sideDrawer').classList.add('translate-x-full');
     }
 
-    // --- مشاركة التطبيق ---
     async function shareApplication() {
       closeSideDrawer();
       const shareData = {
@@ -951,7 +949,6 @@
       }
     }
 
-    // --- رصد غياب اليوم تلقائياً لمن لم يحضر ---
     async function markAbsentTodayAutomatically() {
       const today = new Date().toISOString().split('T')[0];
       const gradeStudents = studentsData.filter(s => s.grade === currentGrade);
@@ -988,7 +985,6 @@
       showToast(`تم تسجيل الغياب تلقائياً لعدد (${unrecordedStudents.length}) طالب ✓`);
     }
 
-    // --- دفتر الخزينة اليومية ---
     function loadTreasuryFromStorage() {
       try {
         treasuryData = JSON.parse(localStorage.getItem('mr_treasury_records') || '[]');
@@ -1059,7 +1055,6 @@
       document.getElementById('totalTreasurySum').textContent = `${sum.toLocaleString()} ج.م`;
     }
 
-    // --- التحقق من الباسورد أولاً قبل فتح تعديل إعدادات المعلم ---
     function openTeacherAuthCheckModal() {
       closeSideDrawer();
       document.getElementById('checkTeacherPassword').value = '';
@@ -1846,7 +1841,6 @@
       }
     }
 
-    // --- الماسح مع زرار الفلاش ---
     function openScannerModal() {
       isTorchOn = false;
       updateTorchButtonUI();
