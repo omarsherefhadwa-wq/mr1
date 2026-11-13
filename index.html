@@ -80,8 +80,8 @@
 
     @media print {
       body * { visibility: hidden; }
-      #printableArea, #printableArea * { visibility: visible; }
-      #printableArea { position: absolute; left: 0; top: 0; width: 100%; }
+      #printableArea, #printableArea *, #printCenterModal, #printCenterModal * { visibility: visible; }
+      #printableArea, #printCenterModal { position: absolute; left: 0; top: 0; width: 100%; background: white !important; color: black !important; }
       .no-print { display: none !important; }
     }
   </style>
@@ -96,7 +96,7 @@
 
   <!-- Side Drawer Menu -->
   <div id="sideDrawerBackdrop" onclick="closeSideDrawer()" class="fixed inset-0 bg-black/60 backdrop-blur-xs z-40 hidden transition-opacity"></div>
-  <aside id="sideDrawer" class="fixed top-0 right-0 h-full w-72 card-bg border-l border-slate-700 z-50 transform translate-x-full transition-transform duration-300 flex flex-col justify-between p-5 shadow-2xl">
+  <aside id="sideDrawer" class="fixed top-0 right-0 h-full w-72 card-bg border-l border-slate-700 z-50 transform translate-x-full transition-transform duration-300 flex flex-col justify-between p-5 shadow-2xl overflow-y-auto">
     <div class="space-y-6">
       <div class="flex items-center justify-between border-b border-slate-700 pb-4">
         <div class="flex items-center gap-2.5">
@@ -104,8 +104,8 @@
             <i class="fa-solid fa-user-tie"></i>
           </div>
           <div>
-            <h3 class="font-bold text-sm text-white">إعدادات منصة MR</h3>
-            <span class="text-[11px] text-slate-400">التحكم والنسخ الاحتياطي</span>
+            <h3 class="font-bold text-sm text-white" id="drawerTeacherName">منصة MR</h3>
+            <span class="text-[11px] text-slate-400">الإعدادات والخزينة اليومية</span>
           </div>
         </div>
         <button onclick="closeSideDrawer()" class="text-slate-400 hover:text-white p-1">
@@ -113,8 +113,8 @@
         </button>
       </div>
 
-      <nav class="space-y-2.5">
-        <button onclick="toggleTheme()" class="w-full flex items-center justify-between p-3 rounded-xl bg-slate-800/70 hover:bg-slate-800 border border-slate-700/70 text-xs font-bold transition">
+      <nav class="space-y-2.5 text-xs">
+        <button onclick="toggleTheme()" class="w-full flex items-center justify-between p-3 rounded-xl bg-slate-800/70 hover:bg-slate-800 border border-slate-700/70 font-bold transition">
           <span class="flex items-center gap-2.5 text-slate-200">
             <i id="themeIcon" class="fa-solid fa-sun text-amber-400 text-sm"></i>
             <span id="themeText">تفعيل الوضع الفاتح</span>
@@ -122,19 +122,40 @@
           <span class="text-[10px] px-2 py-0.5 rounded bg-slate-900 text-amber-400">تبديل</span>
         </button>
 
-        <button onclick="downloadBackup()" class="w-full flex items-center gap-3 p-3 rounded-xl bg-slate-800/70 hover:bg-slate-800 border border-slate-700/70 text-xs font-bold text-slate-200 transition">
-          <i class="fa-solid fa-download text-emerald-400 text-sm"></i>
+        <button onclick="openTreasuryModal()" class="w-full flex items-center gap-3 p-3 rounded-xl bg-slate-800/70 hover:bg-slate-800 border border-slate-700/70 font-bold text-slate-200 transition">
+          <i class="fa-solid fa-vault text-amber-400 text-sm"></i>
+          <span>دفتر الخزينة والإيرادات اليومية</span>
+        </button>
+
+        <button onclick="openTeacherAuthCheckModal()" class="w-full flex items-center gap-3 p-3 rounded-xl bg-slate-800/70 hover:bg-slate-800 border border-slate-700/70 font-bold text-slate-200 transition">
+          <i class="fa-solid fa-shield-halved text-indigo-400 text-sm"></i>
+          <span>تعديل بيانات المعلم والباسورد</span>
+        </button>
+
+        <button onclick="openPrintCenterModal()" class="w-full flex items-center gap-3 p-3 rounded-xl bg-slate-800/70 hover:bg-slate-800 border border-slate-700/70 font-bold text-slate-200 transition">
+          <i class="fa-solid fa-print text-emerald-400 text-sm"></i>
+          <span>طباعة كشف شامل للطلاب (PDF)</span>
+        </button>
+
+        <button onclick="downloadBackup()" class="w-full flex items-center gap-3 p-3 rounded-xl bg-slate-800/70 hover:bg-slate-800 border border-slate-700/70 font-bold text-slate-200 transition">
+          <i class="fa-solid fa-download text-sky-400 text-sm"></i>
           <span>تنزيل نسخة احتياطية (Backup)</span>
         </button>
 
-        <button onclick="triggerRestoreBackup()" class="w-full flex items-center gap-3 p-3 rounded-xl bg-slate-800/70 hover:bg-slate-800 border border-slate-700/70 text-xs font-bold text-slate-200 transition">
-          <i class="fa-solid fa-upload text-indigo-400 text-sm"></i>
+        <button onclick="triggerRestoreBackup()" class="w-full flex items-center gap-3 p-3 rounded-xl bg-slate-800/70 hover:bg-slate-800 border border-slate-700/70 font-bold text-slate-200 transition">
+          <i class="fa-solid fa-upload text-purple-400 text-sm"></i>
           <span>رفع نسخة احتياطية (Restore)</span>
+        </button>
+
+        <!-- زرار مشاركة التطبيق -->
+        <button onclick="shareApplication()" class="w-full flex items-center gap-3 p-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/40 font-bold text-amber-400 transition">
+          <i class="fa-solid fa-share-nodes text-sm"></i>
+          <span>مشاركة التطبيق</span>
         </button>
       </nav>
     </div>
 
-    <div class="border-t border-slate-700 pt-4">
+    <div class="border-t border-slate-700 pt-4 mt-4">
       <button onclick="handleLogout()" class="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-red-950/60 hover:bg-red-900/80 border border-red-800/60 text-red-300 text-xs font-bold transition">
         <i class="fa-solid fa-right-from-bracket"></i>
         <span>تسجيل الخروج</span>
@@ -152,7 +173,7 @@
           <div class="w-20 h-20 gold-gradient rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
             <i class="fa-solid fa-graduation-cap text-3xl text-slate-900"></i>
           </div>
-          <h1 class="text-2xl font-bold text-white mb-1">منصة MR</h1>
+          <h1 id="authTitle" class="text-2xl font-bold text-white mb-1">منصة MR</h1>
           <p class="text-slate-400 text-sm">نظام إدارة الطلاب والمدفوعات</p>
         </div>
 
@@ -185,7 +206,6 @@
             تسجيل الدخول
           </button>
           
-          <!-- زر إصلاح سريع لحل مشكلة الدخول فوراً -->
           <button type="button" onclick="hardResetLoginSession()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs rounded-xl border border-slate-700 transition flex items-center justify-center gap-1.5 mt-2">
             <i class="fa-solid fa-rotate-right text-amber-400"></i>
             <span>إصلاح وتطهير جلسة الدخول (إذا علق معك)</span>
@@ -207,7 +227,7 @@
               <i class="fa-solid fa-user-tie"></i>
             </div>
             <div>
-              <h2 class="font-bold text-base leading-tight">MR</h2>
+              <h2 class="font-bold text-base leading-tight" id="navTeacherBrand">MR</h2>
               <span id="syncStatusText" class="text-[11px] text-emerald-400 flex items-center gap-1">
                 <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span> متصل بالسحاب
               </span>
@@ -278,12 +298,17 @@
           </button>
         </div>
 
-        <!-- Students List Header -->
-        <div class="flex items-center justify-between">
+        <!-- Students List Header + زرار رصد غياب اليوم تلقائياً -->
+        <div class="flex flex-wrap items-center justify-between gap-2">
           <h3 class="text-lg font-bold text-slate-200 flex items-center space-x-2 space-x-reverse">
             <span id="currentGradeTitle">الأول الإعدادي</span>
             <span id="studentCountBadge" class="bg-slate-800 text-amber-400 text-xs px-2.5 py-1 rounded-full border border-slate-700">0 طالب</span>
           </h3>
+
+          <button onclick="markAbsentTodayAutomatically()" class="bg-red-950/70 hover:bg-red-900/90 text-red-300 border border-red-800/70 px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition shadow-sm">
+            <i class="fa-solid fa-user-xmark"></i>
+            <span>رصد غياب اليوم تلقائياً لمن لم يحضر</span>
+          </button>
         </div>
 
         <!-- Students Cards Grid -->
@@ -301,6 +326,155 @@
   <footer class="py-4 border-t border-slate-800 text-center text-xs text-slate-400 tracking-wider">
     Created by Omar Hadwa | الدعم الفني 01013587867
   </footer>
+
+  <!-- Modal: Treasury / Daily Revenue -->
+  <div id="treasuryModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+    <div class="card-bg rounded-2xl max-w-xl w-full p-6 space-y-4 border border-slate-700 shadow-2xl max-h-[90vh] flex flex-col">
+      <div class="flex items-center justify-between border-b border-slate-700 pb-3 flex-shrink-0">
+        <h3 class="font-bold text-slate-100 flex items-center gap-2">
+          <i class="fa-solid fa-vault text-amber-400"></i> دفتر الخزينة والإيرادات اليومية
+        </h3>
+        <button onclick="closeTreasuryModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <div class="bg-slate-900/70 p-4 rounded-xl border border-slate-800 flex items-center justify-between flex-shrink-0">
+        <div>
+          <span class="text-xs text-slate-400 block font-medium">إجمالي الإيرادات المسجلة</span>
+          <span id="totalTreasurySum" class="text-xl font-bold text-emerald-400">0 ج.م</span>
+        </div>
+        <i class="fa-solid fa-sack-dollar text-3xl text-slate-700"></i>
+      </div>
+
+      <form onsubmit="handleTreasurySubmit(event)" class="grid grid-cols-1 sm:grid-cols-3 gap-2 flex-shrink-0">
+        <div>
+          <label class="block text-[11px] text-slate-400 mb-1">التاريخ</label>
+          <input type="date" id="treasuryDate" required class="w-full p-2 rounded-xl input-style text-xs">
+        </div>
+        <div>
+          <label class="block text-[11px] text-slate-400 mb-1">المبلغ المدخل (ج.م)</label>
+          <input type="number" id="treasuryAmount" required placeholder="مثال: 500" class="w-full p-2 rounded-xl input-style text-xs font-bold text-emerald-400">
+        </div>
+        <div class="flex items-end">
+          <button type="submit" class="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs transition shadow">
+            تسجيل إيراد اليوم
+          </button>
+        </div>
+      </form>
+
+      <div class="flex-grow overflow-y-auto space-y-2 pr-1 pt-2">
+        <h4 class="font-bold text-xs text-slate-300">سجل إيرادات الأيام السابقة</h4>
+        <div id="treasuryRecordsList" class="space-y-1.5"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Teacher Auth Check -->
+  <div id="teacherAuthCheckModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+    <div class="card-bg rounded-2xl max-w-md w-full p-6 space-y-4 border border-slate-700 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-700 pb-3">
+        <h3 class="font-bold text-slate-100 flex items-center gap-2">
+          <i class="fa-solid fa-lock text-amber-400"></i> التحقق الأمني لتعديل البيانات
+        </h3>
+        <button onclick="closeTeacherAuthCheckModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <form onsubmit="handleTeacherAuthVerify(event)" class="space-y-3">
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1">أدخل كلمة المرور الحالية للتأكيد *</label>
+          <input type="password" id="checkTeacherPassword" required class="w-full p-2.5 rounded-xl input-style text-sm" placeholder="••••••••">
+        </div>
+        <div id="authCheckError" class="hidden text-red-400 text-xs bg-red-950/50 p-2 rounded-lg border border-red-800 text-center">
+          كلمة المرور غير صحيحة!
+        </div>
+
+        <div class="pt-2 flex justify-end space-x-2 space-x-reverse">
+          <button type="button" onclick="closeTeacherAuthCheckModal()" class="px-4 py-2 bg-slate-800 text-slate-300 text-xs font-bold rounded-xl hover:bg-slate-700">إلغاء</button>
+          <button type="submit" class="px-5 py-2 gold-gradient text-slate-900 text-xs font-bold rounded-xl hover:opacity-90">تحقق ومتابعة</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Teacher Settings -->
+  <div id="teacherSettingsModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+    <div class="card-bg rounded-2xl max-w-md w-full p-6 space-y-4 border border-slate-700 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-700 pb-3">
+        <h3 class="font-bold text-slate-100 flex items-center gap-2">
+          <i class="fa-solid fa-user-gear text-indigo-400"></i> إعدادات حساب المعلم
+        </h3>
+        <button onclick="closeTeacherSettingsModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <form onsubmit="handleTeacherSettingsSave(event)" class="space-y-3">
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1">اسم المنصة / المعلم</label>
+          <input type="text" id="settingTeacherName" required class="w-full p-2.5 rounded-xl input-style text-sm" placeholder="MR">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1">بريد تسجيل الدخول الجديد</label>
+          <input type="text" id="settingTeacherEmail" required class="w-full p-2.5 rounded-xl input-style text-sm" placeholder="mr@gmail.com">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1">كلمة المرور الجديدة</label>
+          <input type="text" id="settingTeacherPassword" required class="w-full p-2.5 rounded-xl input-style text-sm" placeholder="••••••••">
+        </div>
+
+        <div class="pt-2 flex justify-end space-x-2 space-x-reverse">
+          <button type="button" onclick="closeTeacherSettingsModal()" class="px-4 py-2 bg-slate-800 text-slate-300 text-xs font-bold rounded-xl hover:bg-slate-700">إلغاء</button>
+          <button type="submit" class="px-5 py-2 gold-gradient text-slate-900 text-xs font-bold rounded-xl hover:opacity-90">حفظ التعديلات</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Print Center -->
+  <div id="printCenterModal" class="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden">
+    <div class="card-bg rounded-2xl max-w-4xl w-full p-6 space-y-4 border border-slate-700 shadow-2xl max-h-[90vh] flex flex-col">
+      <div class="flex items-center justify-between border-b border-slate-700 pb-3 flex-shrink-0">
+        <h3 class="font-bold text-slate-100 flex items-center gap-2">
+          <i class="fa-solid fa-print text-emerald-400"></i> مركز طباعة كشف الطلاب الشامل
+        </h3>
+        <div class="flex items-center gap-2 no-print">
+          <button onclick="window.print()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-2 transition shadow">
+            <i class="fa-solid fa-print"></i> طباعة الكشف ورقياً
+          </button>
+          <button onclick="closePrintCenterModal()" class="text-slate-400 hover:text-white text-lg px-2"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 bg-slate-900/60 p-3 rounded-xl border border-slate-800 flex-shrink-0 no-print">
+        <label class="text-xs text-slate-300 font-bold">اختر الصف للطباعة:</label>
+        <select id="printGradeSelect" onchange="renderPrintableTable()" class="p-2 rounded-lg input-style text-xs flex-grow">
+          <option value="1_prep">الأول الإعدادي</option>
+          <option value="2_prep">الثاني الإعدادي</option>
+          <option value="3_prep">الثالث الإعدادي</option>
+          <option value="1_sec">الأول الثانوي</option>
+          <option value="2_sec">الثاني الثانوي</option>
+          <option value="bac">صف البكالوريا</option>
+          <option value="all">جميع الصفوف الدراسية</option>
+        </select>
+      </div>
+
+      <div class="flex-grow overflow-y-auto space-y-3 pr-1 bg-white text-slate-900 p-4 rounded-xl" id="printableTableContainer">
+        <div class="text-center pb-3 border-b border-slate-200">
+          <h2 id="printSheetTitle" class="text-lg font-bold">كشف طلاب سنتر MR</h2>
+          <p id="printSheetSubtitle" class="text-xs text-slate-600 mt-0.5">بيانات الطلاب وأكواد الحضور وأرقام أولياء الأمور</p>
+        </div>
+        <table class="w-full border-collapse text-xs">
+          <thead>
+            <tr class="bg-slate-100 border-b border-slate-300 text-slate-800">
+              <th class="p-2 text-right border border-slate-200">الكود</th>
+              <th class="p-2 text-right border border-slate-200">اسم الطالب</th>
+              <th class="p-2 text-right border border-slate-200">الصف الدراسي</th>
+              <th class="p-2 text-right border border-slate-200">المجموعة</th>
+              <th class="p-2 text-right border border-slate-200">ولي الأمر</th>
+            </tr>
+          </thead>
+          <tbody id="printTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 
   <!-- Modal: Student Profile -->
   <div id="profileModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
@@ -339,7 +513,6 @@
             <span id="profGradeBadge" class="text-xs px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700"></span>
           </div>
 
-          <!-- QR Code Container -->
           <div class="flex flex-col items-center justify-center bg-slate-950/60 p-4 rounded-xl border border-slate-800 my-2">
             <div id="qrcode" class="bg-white p-2 rounded-lg"></div>
             <span class="text-[11px] text-slate-400 mt-2">امسح الكود لتسجيل الحضور السريع</span>
@@ -364,7 +537,6 @@
           </button>
         </div>
 
-        <!-- التقرير الشهري للطالب وإرساله لولي الأمر واتساب -->
         <div class="bg-emerald-950/20 border border-emerald-800/50 p-4 rounded-xl space-y-2.5 no-print">
           <div class="flex items-center justify-between">
             <h4 class="font-bold text-emerald-400 text-xs flex items-center gap-1.5">
@@ -523,7 +695,7 @@
     </div>
   </div>
 
-  <!-- Modal: QR / Barcode Scanner -->
+  <!-- Modal: QR / Barcode Scanner مع زرار الفلاش -->
   <div id="scannerModal" class="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden">
     <div class="card-bg rounded-2xl max-w-md w-full p-5 space-y-4 border border-slate-700 text-center">
       <div class="flex items-center justify-between border-b border-slate-700 pb-3">
@@ -536,8 +708,12 @@
       <div id="reader" class="w-full rounded-xl overflow-hidden border border-slate-700 bg-slate-950"></div>
       <p class="text-xs text-slate-400">وجه كاميرا الهاتف نحو كود QR الخاص بالطالب لتسجيل الحضور تلقائياً.</p>
 
-      <div class="pt-2">
-        <button type="button" onclick="closeScannerModal()" class="w-full py-2.5 bg-slate-800 text-slate-300 text-xs font-bold rounded-xl hover:bg-slate-700">إغلاق الكاميرا</button>
+      <div class="pt-2 flex gap-2">
+        <button type="button" id="torchToggleBtn" onclick="toggleScannerTorch()" class="flex-1 py-2.5 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/50 text-amber-300 text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition">
+          <i class="fa-solid fa-bolt"></i>
+          <span id="torchBtnText">تشغيل الفلاش</span>
+        </button>
+        <button type="button" onclick="closeScannerModal()" class="flex-1 py-2.5 bg-slate-800 text-slate-300 text-xs font-bold rounded-xl hover:bg-slate-700">إغلاق الكاميرا</button>
       </div>
     </div>
   </div>
@@ -671,8 +847,16 @@
 
     let currentGrade = '1_prep';
     let studentsData = [];
+    let treasuryData = [];
     let activeProfileStudentId = null;
     let html5QrCode = null;
+    let isTorchOn = false;
+
+    let teacherConfig = {
+      name: localStorage.getItem('mr_teacher_name') || 'MR',
+      email: localStorage.getItem('mr_teacher_email') || 'mr@gmail.com',
+      password: localStorage.getItem('mr_teacher_pass') || 'mora#70007#'
+    };
 
     const gradeNames = {
       '1_prep': 'الأول الإعدادي',
@@ -691,9 +875,17 @@
 
     window.addEventListener('DOMContentLoaded', () => {
       initTheme();
+      loadTeacherIdentity();
+      loadTreasuryFromStorage();
       updateConnectionBadge();
       checkAuthStatus();
     });
+
+    function loadTeacherIdentity() {
+      document.getElementById('drawerTeacherName').textContent = `منصة ${teacherConfig.name}`;
+      document.getElementById('navTeacherBrand').textContent = teacherConfig.name;
+      document.getElementById('authTitle').textContent = `منصة ${teacherConfig.name}`;
+    }
 
     function initTheme() {
       const savedTheme = localStorage.getItem('mr_theme') || 'dark';
@@ -735,12 +927,234 @@
       document.getElementById('sideDrawer').classList.add('translate-x-full');
     }
 
+    // --- مشاركة التطبيق ---
+    async function shareApplication() {
+      closeSideDrawer();
+      const shareData = {
+        title: `منصة ${teacherConfig.name} - إدارة السنتر والطلاب`,
+        text: `تطبيق منصة ${teacherConfig.name} لإدارة الطلاب، الحضور بالـ QR، والمدفوعات والتقارير الفورية.`,
+        url: window.location.href
+      };
+
+      if (navigator.share) {
+        try {
+          await navigator.share(shareData);
+          showToast('تمت المشاركة بنجاح ✓');
+        } catch (err) {}
+      } else {
+        try {
+          await navigator.clipboard.writeText(window.location.href);
+          showToast('تم نسخ رابط التطبيق بنجاح! يمكنك إرساله لأي شخص ✓');
+        } catch (e) {
+          showToast('الرابط: ' + window.location.href);
+        }
+      }
+    }
+
+    // --- رصد غياب اليوم تلقائياً لمن لم يحضر ---
+    async function markAbsentTodayAutomatically() {
+      const today = new Date().toISOString().split('T')[0];
+      const gradeStudents = studentsData.filter(s => s.grade === currentGrade);
+
+      if (gradeStudents.length === 0) {
+        showToast('لا يوجد طلاب في هذا الصف حالياً', 'error');
+        return;
+      }
+
+      const unrecordedStudents = gradeStudents.filter(s => {
+        const attendance = s.attendance || [];
+        return !attendance.some(a => a.date === today);
+      });
+
+      if (unrecordedStudents.length === 0) {
+        showToast('جميع طلاب الصف مسجل لهم حضور أو غياب اليوم بالفعل ✓');
+        return;
+      }
+
+      if (!confirm(`يوجد عدد (${unrecordedStudents.length}) طالب في (${gradeNames[currentGrade]}) لم يسجلوا حضوراً اليوم (${today}). هل تريد تسجيلهم (غائب) تلقائياً؟`)) {
+        return;
+      }
+
+      for (const s of unrecordedStudents) {
+        if (!s.attendance) s.attendance = [];
+        s.attendance.push({
+          status: 'absent',
+          quiz: null,
+          date: today
+        });
+        await saveStudentToSupabase(s);
+      }
+
+      showToast(`تم تسجيل الغياب تلقائياً لعدد (${unrecordedStudents.length}) طالب ✓`);
+    }
+
+    // --- دفتر الخزينة اليومية ---
+    function loadTreasuryFromStorage() {
+      try {
+        treasuryData = JSON.parse(localStorage.getItem('mr_treasury_records') || '[]');
+      } catch (e) {
+        treasuryData = [];
+      }
+    }
+
+    function openTreasuryModal() {
+      closeSideDrawer();
+      document.getElementById('treasuryDate').value = new Date().toISOString().split('T')[0];
+      document.getElementById('treasuryAmount').value = '';
+      renderTreasuryRecords();
+      document.getElementById('treasuryModal').classList.remove('hidden');
+    }
+
+    function closeTreasuryModal() {
+      document.getElementById('treasuryModal').classList.add('hidden');
+    }
+
+    function handleTreasurySubmit(e) {
+      e.preventDefault();
+      const date = document.getElementById('treasuryDate').value;
+      const amount = Number(document.getElementById('treasuryAmount').value) || 0;
+
+      treasuryData.push({ id: 'tr_' + Date.now(), date, amount });
+      localStorage.setItem('mr_treasury_records', JSON.stringify(treasuryData));
+      
+      document.getElementById('treasuryAmount').value = '';
+      renderTreasuryRecords();
+      showToast('تم تسجيل إيراد اليوم في الخزينة بنجاح ✓');
+    }
+
+    function deleteTreasuryRecord(id) {
+      treasuryData = treasuryData.filter(t => t.id !== id);
+      localStorage.setItem('mr_treasury_records', JSON.stringify(treasuryData));
+      renderTreasuryRecords();
+      showToast('تم حذف السجل بنجاح');
+    }
+
+    function renderTreasuryRecords() {
+      const container = document.getElementById('treasuryRecordsList');
+      container.innerHTML = '';
+      let sum = 0;
+
+      if (treasuryData.length === 0) {
+        container.innerHTML = '<p class="text-xs text-slate-500 italic p-3 text-center">لا توجد إيرادات مسجلة حتى الآن.</p>';
+        document.getElementById('totalTreasurySum').textContent = '0 ج.م';
+        return;
+      }
+
+      const sorted = [...treasuryData].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+      sorted.forEach(item => {
+        sum += item.amount;
+        const div = document.createElement('div');
+        div.className = 'flex items-center justify-between bg-slate-900/60 p-2.5 rounded-xl border border-slate-800 text-xs';
+        div.innerHTML = `
+          <div class="flex items-center gap-3">
+            <span class="text-amber-400 font-bold"><i class="fa-regular fa-calendar ml-1"></i> ${item.date}</span>
+            <span class="text-emerald-400 font-bold">${item.amount.toLocaleString()} ج.م</span>
+          </div>
+          <button onclick="deleteTreasuryRecord('${item.id}')" class="text-slate-500 hover:text-red-400 transition" title="حذف"><i class="fa-solid fa-trash-can"></i></button>
+        `;
+        container.appendChild(div);
+      });
+
+      document.getElementById('totalTreasurySum').textContent = `${sum.toLocaleString()} ج.م`;
+    }
+
+    // --- التحقق من الباسورد أولاً قبل فتح تعديل إعدادات المعلم ---
+    function openTeacherAuthCheckModal() {
+      closeSideDrawer();
+      document.getElementById('checkTeacherPassword').value = '';
+      document.getElementById('authCheckError').classList.add('hidden');
+      document.getElementById('teacherAuthCheckModal').classList.remove('hidden');
+    }
+
+    function closeTeacherAuthCheckModal() {
+      document.getElementById('teacherAuthCheckModal').classList.add('hidden');
+    }
+
+    function handleTeacherAuthVerify(e) {
+      e.preventDefault();
+      const enteredPass = document.getElementById('checkTeacherPassword').value.trim();
+
+      if (enteredPass === teacherConfig.password) {
+        closeTeacherAuthCheckModal();
+        openTeacherSettingsModal();
+      } else {
+        document.getElementById('authCheckError').classList.remove('hidden');
+      }
+    }
+
+    function openTeacherSettingsModal() {
+      document.getElementById('settingTeacherName').value = teacherConfig.name;
+      document.getElementById('settingTeacherEmail').value = teacherConfig.email;
+      document.getElementById('settingTeacherPassword').value = teacherConfig.password;
+      document.getElementById('teacherSettingsModal').classList.remove('hidden');
+    }
+
+    function closeTeacherSettingsModal() {
+      document.getElementById('teacherSettingsModal').classList.add('hidden');
+    }
+
+    function handleTeacherSettingsSave(e) {
+      e.preventDefault();
+      teacherConfig.name = document.getElementById('settingTeacherName').value.trim() || 'MR';
+      teacherConfig.email = document.getElementById('settingTeacherEmail').value.trim() || 'mr@gmail.com';
+      teacherConfig.password = document.getElementById('settingTeacherPassword').value.trim() || 'mora#70007#';
+
+      localStorage.setItem('mr_teacher_name', teacherConfig.name);
+      localStorage.setItem('mr_teacher_email', teacherConfig.email);
+      localStorage.setItem('mr_teacher_pass', teacherConfig.password);
+
+      loadTeacherIdentity();
+      closeTeacherSettingsModal();
+      showToast('تم تحديث إعدادات حساب المعلم بنجاح ✓');
+    }
+
+    function openPrintCenterModal() {
+      closeSideDrawer();
+      document.getElementById('printGradeSelect').value = currentGrade;
+      renderPrintableTable();
+      document.getElementById('printCenterModal').classList.remove('hidden');
+    }
+
+    function closePrintCenterModal() {
+      document.getElementById('printCenterModal').classList.add('hidden');
+    }
+
+    function renderPrintableTable() {
+      const grade = document.getElementById('printGradeSelect').value;
+      const tbody = document.getElementById('printTableBody');
+      tbody.innerHTML = '';
+
+      const filtered = studentsData.filter(s => grade === 'all' || s.grade === grade);
+
+      document.getElementById('printSheetTitle').textContent = `كشف طلاب سنتر ${teacherConfig.name} - ${grade === 'all' ? 'جميع الصفوف' : gradeNames[grade]}`;
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-slate-500 italic">لا يوجد طلاب مسجلين.</td></tr>';
+        return;
+      }
+
+      filtered.forEach(s => {
+        const tr = document.createElement('tr');
+        tr.className = 'border-b border-slate-200 hover:bg-slate-50';
+        tr.innerHTML = `
+          <td class="p-2 border border-slate-200 font-bold text-amber-600">${s.code || '1'}</td>
+          <td class="p-2 border border-slate-200 font-bold">${s.name}</td>
+          <td class="p-2 border border-slate-200">${gradeNames[s.grade]}</td>
+          <td class="p-2 border border-slate-200">${s.group_name || 'عام'}</td>
+          <td class="p-2 border border-slate-200 font-mono">${s.parent_phone}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
     function downloadBackup() {
       try {
         const backupObj = {
           app: 'MR_Student_Manager',
           exported_at: new Date().toISOString(),
-          students: studentsData
+          students: studentsData,
+          treasury: treasuryData
         };
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupObj, null, 2));
         const downloadAnchor = document.createElement('a');
@@ -770,6 +1184,10 @@
         try {
           const parsed = JSON.parse(e.target.result);
           const importedStudents = Array.isArray(parsed) ? parsed : parsed.students;
+          if (parsed.treasury) {
+            treasuryData = parsed.treasury;
+            localStorage.setItem('mr_treasury_records', JSON.stringify(treasuryData));
+          }
           
           if (!Array.isArray(importedStudents)) {
             showToast('ملف النسخة الاحتياطية غير صالح!', 'error');
@@ -806,11 +1224,10 @@
       reader.readAsText(file);
     }
 
-    // زر إصلاح وتطهير جلسة الدخول
     function hardResetLoginSession() {
       localStorage.removeItem('mr_teacher_logged');
-      document.getElementById('loginEmail').value = 'mr@gmail.com';
-      document.getElementById('loginPassword').value = 'mora#70007#';
+      document.getElementById('loginEmail').value = teacherConfig.email;
+      document.getElementById('loginPassword').value = teacherConfig.password;
       showToast('تمت إعادة ضبط الجلسة، اضغط تسجيل الدخول الآن');
     }
 
@@ -887,7 +1304,7 @@
       const email = document.getElementById('loginEmail').value.trim();
       const password = document.getElementById('loginPassword').value.trim();
       
-      if (email === 'mr@gmail.com' && password === 'mora#70007#') {
+      if (email === teacherConfig.email && password === teacherConfig.password) {
         localStorage.setItem('mr_teacher_logged', 'true');
         showDashboard();
       } else {
@@ -1224,7 +1641,7 @@
       msg += `• درجات التسميع: ${quizGrades || 'لا توجد درجات مسجلة'}\n`;
       msg += `• حالة الاشتراك: ${paymentStatusText}\n`;
       msg += `------------------\n`;
-      msg += `مع تحيات إدارة منصة *MR* 🎓`;
+      msg += `مع تحيات إدارة منصة *${teacherConfig.name}* 🎓`;
 
       const cleanPhone = s.parent_phone.replace(/\D/g, '');
       const waPhone = cleanPhone.startsWith('2') ? cleanPhone : `2${cleanPhone}`;
@@ -1429,7 +1846,10 @@
       }
     }
 
+    // --- الماسح مع زرار الفلاش ---
     function openScannerModal() {
+      isTorchOn = false;
+      updateTorchButtonUI();
       document.getElementById('scannerModal').classList.remove('hidden');
       setTimeout(() => {
         html5QrCode = new Html5Qrcode("reader");
@@ -1446,7 +1866,36 @@
       }, 300);
     }
 
+    async function toggleScannerTorch() {
+      if (!html5QrCode) return;
+      try {
+        isTorchOn = !isTorchOn;
+        await html5QrCode.applyVideoConstraints({
+          advanced: [{ torch: isTorchOn }]
+        });
+        updateTorchButtonUI();
+      } catch (err) {
+        isTorchOn = false;
+        updateTorchButtonUI();
+        showToast('الفلاش غير مدعوم على هذا الجهاز أو المتصفح', 'error');
+      }
+    }
+
+    function updateTorchButtonUI() {
+      const btn = document.getElementById('torchToggleBtn');
+      const text = document.getElementById('torchBtnText');
+      if (!btn || !text) return;
+      if (isTorchOn) {
+        btn.className = 'flex-1 py-2.5 bg-amber-500 text-slate-900 text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition shadow-lg';
+        text.textContent = 'إيقاف الفلاش';
+      } else {
+        btn.className = 'flex-1 py-2.5 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/50 text-amber-300 text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition';
+        text.textContent = 'تشغيل الفلاش';
+      }
+    }
+
     function closeScannerModal() {
+      isTorchOn = false;
       if (html5QrCode) {
         html5QrCode.stop().then(() => {
           html5QrCode.clear();
@@ -1574,7 +2023,6 @@
         const isPaid = payments[month] && payments[month].is_paid;
 
         if (isPaid) {
-          paidList.path = true; // safe assignment
           paidList.push(s);
         } else {
           const unpaidMonths = [];
@@ -1599,7 +2047,7 @@
         unpaidList.forEach(item => {
           const s = item.student;
           const monthsText = item.unpaidMonths.join(' و ');
-          const message = encodeURIComponent(`السلام عليكم ورحمة الله وبركاته، تحية طيبة لولي أمر الطالب (${s.name}) مع منصة MR. نود تذكيركم بضرورة سداد المصروفات المتبقية عن شهر (${monthsText}). شاكرين تعاونكم.`);
+          const message = encodeURIComponent(`السلام عليكم ورحمة الله وبركاته، تحية طيبة لولي أمر الطالب (${s.name}) مع منصة ${teacherConfig.name}. نود تذكيركم بضرورة سداد المصروفات المتبقية عن شهر (${monthsText}). شاكرين تعاونكم.`);
           
           const div = document.createElement('div');
           div.className = 'flex items-center justify-between card-bg p-3 rounded-xl border border-red-900/40 text-xs';
