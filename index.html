@@ -24,22 +24,10 @@
       --text-muted: #94a3b8;
     }
 
-    body.light-mode {
-      --bg-main: #f1f5f9;
-      --bg-card: #ffffff;
-      --border-card: #cbd5e1;
-      --bg-input: #f8fafc;
-      --border-input: #94a3b8;
-      --text-main: #0f172a;
-      --text-sub: #334155;
-      --text-muted: #64748b;
-    }
-
     body {
       font-family: 'Tajawal', sans-serif;
       background-color: var(--bg-main);
       color: var(--text-main);
-      transition: background-color 0.25s ease, color 0.25s ease;
     }
 
     .gold-gradient {
@@ -49,7 +37,6 @@
     .card-bg {
       background-color: var(--bg-card);
       border: 1px solid var(--border-card);
-      transition: background-color 0.25s ease, border-color 0.25s ease;
     }
 
     .input-style {
@@ -62,17 +49,6 @@
       border-color: #f59e0b;
       outline: none;
     }
-
-    body.light-mode .text-white { color: #0f172a !important; }
-    body.light-mode .text-slate-100 { color: #1e293b !important; }
-    body.light-mode .text-slate-200 { color: #334155 !important; }
-    body.light-mode .text-slate-300 { color: #475569 !important; }
-    body.light-mode .text-slate-400 { color: #64748b !important; }
-    body.light-mode .bg-slate-800 { background-color: #e2e8f0 !important; color: #1e293b !important; }
-    body.light-mode .bg-slate-900 { background-color: #f1f5f9 !important; }
-    body.light-mode .bg-slate-950\/50 { background-color: #ffffff !important; border: 1px solid #e2e8f0; }
-    body.light-mode .border-slate-700,
-    body.light-mode .border-slate-800 { border-color: #cbd5e1 !important; }
 
     ::-webkit-scrollbar { width: 8px; }
     ::-webkit-scrollbar-track { background: var(--bg-main); }
@@ -114,14 +90,6 @@
       </div>
 
       <nav class="space-y-2.5 text-xs">
-        <button onclick="toggleTheme()" class="w-full flex items-center justify-between p-3 rounded-xl bg-slate-800/70 hover:bg-slate-800 border border-slate-700/70 font-bold transition">
-          <span class="flex items-center gap-2.5 text-slate-200">
-            <i id="themeIcon" class="fa-solid fa-sun text-amber-400 text-sm"></i>
-            <span id="themeText">تفعيل الوضع الفاتح</span>
-          </span>
-          <span class="text-[10px] px-2 py-0.5 rounded bg-slate-900 text-amber-400">تبديل</span>
-        </button>
-
         <button onclick="openTreasuryModal()" class="w-full flex items-center gap-3 p-3 rounded-xl bg-slate-800/70 hover:bg-slate-800 border border-slate-700/70 font-bold text-slate-200 transition">
           <i class="fa-solid fa-vault text-amber-400 text-sm"></i>
           <span>دفتر الخزينة والإيرادات اليومية</span>
@@ -204,11 +172,6 @@
           <button type="submit" class="w-full py-3 rounded-xl gold-gradient font-bold text-slate-900 hover:opacity-90 transition">
             تسجيل الدخول
           </button>
-          
-          <button type="button" onclick="hardResetLoginSession()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs rounded-xl border border-slate-700 transition flex items-center justify-center gap-1.5 mt-2">
-            <i class="fa-solid fa-rotate-right text-amber-400"></i>
-            <span>إصلاح وتطهير جلسة الدخول (لو علق معك)</span>
-          </button>
         </form>
       </div>
     </div>
@@ -284,11 +247,18 @@
 
         <!-- Controls Bar -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div class="md:col-span-2 relative">
-            <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400">
-              <i class="fa-solid fa-magnifying-glass"></i>
-            </span>
-            <input type="text" id="searchInput" oninput="renderStudents()" placeholder="ابحث باسم الطالب أو بالكود..." class="w-full pr-10 pl-4 py-3 rounded-xl input-style text-sm">
+          <div class="md:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <div class="sm:col-span-2 relative">
+              <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400">
+                <i class="fa-solid fa-magnifying-glass"></i>
+              </span>
+              <input type="text" id="searchInput" oninput="renderStudents()" placeholder="ابحث باسم الطالب أو بالكود..." class="w-full pr-10 pl-4 py-3 rounded-xl input-style text-sm">
+            </div>
+            <div>
+              <select id="groupFilterSelect" onchange="renderStudents()" class="w-full py-3 px-2 rounded-xl input-style text-xs font-bold">
+                <option value="all">كل المجموعات</option>
+              </select>
+            </div>
           </div>
 
           <button onclick="openReportModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl text-sm transition flex items-center justify-center space-x-2 space-x-reverse shadow-lg">
@@ -297,7 +267,7 @@
           </button>
         </div>
 
-        <!-- Students List Header + زرار رصد غياب اليوم تلقائياً -->
+        <!-- Students List Header -->
         <div class="flex flex-wrap items-center justify-between gap-2">
           <h3 class="text-lg font-bold text-slate-200 flex items-center space-x-2 space-x-reverse">
             <span id="currentGradeTitle">الأول الإعدادي</span>
@@ -399,7 +369,7 @@
     <div class="card-bg rounded-2xl max-w-md w-full p-6 space-y-4 border border-slate-700 shadow-2xl">
       <div class="flex items-center justify-between border-b border-slate-700 pb-3">
         <h3 class="font-bold text-slate-100 flex items-center gap-2">
-          <i class="fa-solid fa-user-gear text-indigo-400"></i> إعدادات حساب المعلم
+          <i class="fa-solid fa-user-gear text-indigo-400"></i> إعدادات حساب المعلم (مربوط بالسحاب)
         </h3>
         <button onclick="closeTeacherSettingsModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
@@ -420,7 +390,7 @@
 
         <div class="pt-2 flex justify-end space-x-2 space-x-reverse">
           <button type="button" onclick="closeTeacherSettingsModal()" class="px-4 py-2 bg-slate-800 text-slate-300 text-xs font-bold rounded-xl hover:bg-slate-700">إلغاء</button>
-          <button type="submit" class="px-5 py-2 gold-gradient text-slate-900 text-xs font-bold rounded-xl hover:opacity-90">حفظ التعديلات</button>
+          <button type="submit" class="px-5 py-2 gold-gradient text-slate-900 text-xs font-bold rounded-xl hover:opacity-90">حفظ وتحديث سحابي</button>
         </div>
       </form>
     </div>
@@ -835,7 +805,7 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js')
-          .then(() => console.log('Service Worker Registered for Offline Use'))
+          .then(() => console.log('Service Worker Registered'))
           .catch((err) => console.error('SW Registration Failed:', err));
       });
     }
@@ -852,9 +822,10 @@
     let isTorchOn = false;
 
     let teacherConfig = {
-      name: localStorage.getItem('mr_teacher_name') || 'MR',
-      email: localStorage.getItem('mr_teacher_email') || 'mr@gmail.com',
-      password: localStorage.getItem('mr_teacher_pass') || 'mora#70007#'
+      id: 'main_teacher',
+      name: 'MR',
+      email: 'mr@gmail.com',
+      password: 'mora#70007#'
     };
 
     const gradeNames = {
@@ -872,12 +843,12 @@
       '9': 'سبتمبر', '10': 'أكتوبر', '11': 'نوفمبر', '12': 'ديسمبر'
     };
 
-    window.addEventListener('DOMContentLoaded', () => {
-      initTheme();
-      loadTeacherIdentity();
+    window.addEventListener('DOMContentLoaded', async () => {
+      await fetchTeacherSettingsFromSupabase();
       loadTreasuryFromStorage();
       updateConnectionBadge();
       checkAuthStatus();
+      setupRealtime();
     });
 
     function loadTeacherIdentity() {
@@ -886,34 +857,22 @@
       document.getElementById('authTitle').textContent = `منصة ${teacherConfig.name}`;
     }
 
-    function initTheme() {
-      const savedTheme = localStorage.getItem('mr_theme') || 'dark';
-      if (savedTheme === 'light') {
-        document.body.classList.add('light-mode');
-        updateThemeUI(true);
-      } else {
-        document.body.classList.remove('light-mode');
-        updateThemeUI(false);
-      }
-    }
-
-    function toggleTheme() {
-      const isLight = document.body.classList.toggle('light-mode');
-      localStorage.setItem('mr_theme', isLight ? 'light' : 'dark');
-      updateThemeUI(isLight);
-    }
-
-    function updateThemeUI(isLight) {
-      const icon = document.getElementById('themeIcon');
-      const text = document.getElementById('themeText');
-      if (!icon || !text) return;
-      if (isLight) {
-        icon.className = 'fa-solid fa-moon text-indigo-500 text-sm';
-        text.textContent = 'تفعيل الوضع الداكن (Dark)';
-      } else {
-        icon.className = 'fa-solid fa-sun text-amber-400 text-sm';
-        text.textContent = 'تفعيل الوضع الفاتح (Light)';
-      }
+    async function fetchTeacherSettingsFromSupabase() {
+      if (!navigator.onLine) return;
+      try {
+        const { data, error } = await supabaseClient
+          .from('teacher_settings')
+          .select('*')
+          .eq('id', 'main_teacher')
+          .single();
+        
+        if (!error && data) {
+          teacherConfig.name = data.name || 'MR';
+          teacherConfig.email = data.email || 'mr@gmail.com';
+          teacherConfig.password = data.password || 'mora#70007#';
+        }
+      } catch (e) {}
+      loadTeacherIdentity();
     }
 
     function openSideDrawer() {
@@ -942,7 +901,7 @@
       } else {
         try {
           await navigator.clipboard.writeText(window.location.href);
-          showToast('تم نسخ رابط التطبيق بنجاح! يمكنك إرساله لأي شخص ✓');
+          showToast('تم نسخ رابط التطبيق بنجاح! ✓');
         } catch (e) {
           showToast('الرابط: ' + window.location.href);
         }
@@ -951,10 +910,15 @@
 
     async function markAbsentTodayAutomatically() {
       const today = new Date().toISOString().split('T')[0];
-      const gradeStudents = studentsData.filter(s => s.grade === currentGrade);
+      const selectedGroup = document.getElementById('groupFilterSelect').value;
+      
+      let gradeStudents = studentsData.filter(s => s.grade === currentGrade);
+      if (selectedGroup !== 'all') {
+        gradeStudents = gradeStudents.filter(s => (s.group_name || 'عام') === selectedGroup);
+      }
 
       if (gradeStudents.length === 0) {
-        showToast('لا يوجد طلاب في هذا الصف حالياً', 'error');
+        showToast('لا يوجد طلاب في هذا الصف أو المجموعة حالياً', 'error');
         return;
       }
 
@@ -964,11 +928,11 @@
       });
 
       if (unrecordedStudents.length === 0) {
-        showToast('جميع طلاب الصف مسجل لهم حضور أو غياب اليوم بالفعل ✓');
+        showToast('جميع الطلاب مسجل لهم حضور أو غياب اليوم بالفعل ✓');
         return;
       }
 
-      if (!confirm(`يوجد عدد (${unrecordedStudents.length}) طالب في (${gradeNames[currentGrade]}) لم يسجلوا حضوراً اليوم (${today}). هل تريد تسجيلهم (غائب) تلقائياً؟`)) {
+      if (!confirm(`يوجد عدد (${unrecordedStudents.length}) طالب لم يسجلوا حضوراً اليوم (${today}). هل تريد تسجيلهم (غائب) تلقائياً؟`)) {
         return;
       }
 
@@ -1066,9 +1030,11 @@
       document.getElementById('teacherAuthCheckModal').classList.add('hidden');
     }
 
-    function handleTeacherAuthVerify(e) {
+    async function handleTeacherAuthVerify(e) {
       e.preventDefault();
       const enteredPass = document.getElementById('checkTeacherPassword').value.trim();
+
+      await fetchTeacherSettingsFromSupabase();
 
       if (enteredPass === teacherConfig.password) {
         closeTeacherAuthCheckModal();
@@ -1089,19 +1055,37 @@
       document.getElementById('teacherSettingsModal').classList.add('hidden');
     }
 
-    function handleTeacherSettingsSave(e) {
+    async function handleTeacherSettingsSave(e) {
       e.preventDefault();
-      teacherConfig.name = document.getElementById('settingTeacherName').value.trim() || 'MR';
-      teacherConfig.email = document.getElementById('settingTeacherEmail').value.trim() || 'mr@gmail.com';
-      teacherConfig.password = document.getElementById('settingTeacherPassword').value.trim() || 'mora#70007#';
+      const newName = document.getElementById('settingTeacherName').value.trim() || 'MR';
+      const newEmail = document.getElementById('settingTeacherEmail').value.trim() || 'mr@gmail.com';
+      const newPass = document.getElementById('settingTeacherPassword').value.trim() || 'mora#70007#';
 
-      localStorage.setItem('mr_teacher_name', teacherConfig.name);
-      localStorage.setItem('mr_teacher_email', teacherConfig.email);
-      localStorage.setItem('mr_teacher_pass', teacherConfig.password);
+      teacherConfig.name = newName;
+      teacherConfig.email = newEmail;
+      teacherConfig.password = newPass;
 
       loadTeacherIdentity();
       closeTeacherSettingsModal();
-      showToast('تم تحديث إعدادات حساب المعلم بنجاح ✓');
+
+      if (navigator.onLine) {
+        const { error } = await supabaseClient
+          .from('teacher_settings')
+          .upsert({
+            id: 'main_teacher',
+            name: newName,
+            email: newEmail,
+            password: newPass
+          });
+
+        if (error) {
+          showToast('تم التحديث محلياً، وتعذر الحفظ بالسحاب', 'error');
+        } else {
+          showToast('تم تحديث إعدادات المعلم وحفظها بالسحاب لتتزامن على كل الأجهزة ✓');
+        }
+      } else {
+        showToast('أنت أوفلاين، سيتم حفظ الإعدادات على السحاب عند الاتصال بالنت', 'error');
+      }
     }
 
     function openPrintCenterModal() {
@@ -1148,6 +1132,7 @@
         const backupObj = {
           app: 'MR_Student_Manager',
           exported_at: new Date().toISOString(),
+          teacher: teacherConfig,
           students: studentsData,
           treasury: treasuryData
         };
@@ -1179,9 +1164,23 @@
         try {
           const parsed = JSON.parse(e.target.result);
           const importedStudents = Array.isArray(parsed) ? parsed : parsed.students;
+          
           if (parsed.treasury) {
             treasuryData = parsed.treasury;
             localStorage.setItem('mr_treasury_records', JSON.stringify(treasuryData));
+          }
+
+          if (parsed.teacher) {
+            teacherConfig = parsed.teacher;
+            loadTeacherIdentity();
+            if (navigator.onLine) {
+              await supabaseClient.from('teacher_settings').upsert({
+                id: 'main_teacher',
+                name: teacherConfig.name,
+                email: teacherConfig.email,
+                password: teacherConfig.password
+              });
+            }
           }
           
           if (!Array.isArray(importedStudents)) {
@@ -1196,6 +1195,7 @@
 
           studentsData = importedStudents;
           localStorage.setItem('mr_students_backup', JSON.stringify(studentsData));
+          updateGroupFilterOptions();
           renderStudents();
           closeSideDrawer();
 
@@ -1219,17 +1219,11 @@
       reader.readAsText(file);
     }
 
-    function hardResetLoginSession() {
-      localStorage.removeItem('mr_teacher_logged');
-      document.getElementById('loginEmail').value = teacherConfig.email;
-      document.getElementById('loginPassword').value = teacherConfig.password;
-      showToast('تمت إعادة ضبط الجلسة، اضغط تسجيل الدخول الآن');
-    }
-
     window.addEventListener('online', () => {
       updateConnectionBadge();
       showToast('رجع الإنترنت! جاري إرسال التعديلات للسيرفر...');
       processOfflineQueue(false);
+      fetchTeacherSettingsFromSupabase();
     });
 
     window.addEventListener('offline', () => {
@@ -1283,6 +1277,7 @@
       if (local) {
         try {
           studentsData = JSON.parse(local);
+          updateGroupFilterOptions();
           renderStudents();
         } catch (e) {}
       }
@@ -1291,7 +1286,6 @@
       if (navigator.onLine) {
         processOfflineQueue(false);
       }
-      setupRealtime();
     }
 
     async function handleLogin(e) {
@@ -1299,6 +1293,8 @@
       const email = document.getElementById('loginEmail').value.trim();
       const password = document.getElementById('loginPassword').value.trim();
       
+      await fetchTeacherSettingsFromSupabase();
+
       if (email === teacherConfig.email && password === teacherConfig.password) {
         localStorage.setItem('mr_teacher_logged', 'true');
         showDashboard();
@@ -1375,6 +1371,7 @@
           if (queue.length === 0) {
             studentsData = data;
             localStorage.setItem('mr_students_backup', JSON.stringify(studentsData));
+            updateGroupFilterOptions();
             renderStudents();
             if (activeProfileStudentId) renderProfileContent(activeProfileStudentId);
           }
@@ -1384,11 +1381,22 @@
     }
 
     function setupRealtime() {
+      // Realtime للطلاب
       supabaseClient
         .channel('students-realtime-channel')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'students' }, () => {
           if (navigator.onLine && getOfflineQueue().length === 0) {
             loadStudents(false);
+          }
+        })
+        .subscribe();
+
+      // Realtime لإعدادات المعلم
+      supabaseClient
+        .channel('teacher-settings-realtime-channel')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'teacher_settings' }, async () => {
+          if (navigator.onLine) {
+            await fetchTeacherSettingsFromSupabase();
           }
         })
         .subscribe();
@@ -1430,7 +1438,31 @@
       }
 
       document.getElementById('currentGradeTitle').textContent = gradeNames[gradeKey];
+      updateGroupFilterOptions();
       renderStudents();
+    }
+
+    function updateGroupFilterOptions() {
+      const select = document.getElementById('groupFilterSelect');
+      if (!select) return;
+      const currentVal = select.value;
+      select.innerHTML = '<option value="all">كل المجموعات</option>';
+
+      const gradeStudents = studentsData.filter(s => s.grade === currentGrade);
+      const groups = [...new Set(gradeStudents.map(s => s.group_name || 'عام'))];
+
+      groups.forEach(g => {
+        const opt = document.createElement('option');
+        opt.value = g;
+        opt.textContent = g;
+        select.appendChild(opt);
+      });
+
+      if (groups.includes(currentVal)) {
+        select.value = currentVal;
+      } else {
+        select.value = 'all';
+      }
     }
 
     function calculateFinancials() {
@@ -1462,14 +1494,16 @@
       const grid = document.getElementById('studentsGrid');
       const emptyState = document.getElementById('emptyState');
       const search = document.getElementById('searchInput').value.trim().toLowerCase();
+      const selectedGroup = document.getElementById('groupFilterSelect').value;
 
       grid.innerHTML = '';
       calculateFinancials();
 
       const filtered = studentsData.filter(s => {
         const matchesGrade = s.grade === currentGrade;
+        const matchesGroup = selectedGroup === 'all' || (s.group_name || 'عام') === selectedGroup;
         const matchesSearch = !search || s.name.toLowerCase().includes(search) || (s.code && String(s.code).toLowerCase().includes(search));
-        return matchesGrade && matchesSearch;
+        return matchesGrade && matchesGroup && matchesSearch;
       });
 
       document.getElementById('studentCountBadge').textContent = `${filtered.length} طالب`;
@@ -1813,6 +1847,7 @@
           student.fee = Number(document.getElementById('newStudentFee').value) || 150;
 
           closeAddStudentModal();
+          updateGroupFilterOptions();
           renderStudents();
           openProfileModal(student.id);
           await saveStudentToSupabase(student);
@@ -1833,6 +1868,7 @@
         };
 
         studentsData.push(newStudent);
+        updateGroupFilterOptions();
         renderStudents();
         closeAddStudentModal();
         document.getElementById('addStudentForm').reset();
@@ -1928,6 +1964,7 @@
       if (confirm('هل أنت متأكد من حذف هذا الطالب نهائياً؟')) {
         studentsData = studentsData.filter(s => s.id !== id);
         closeProfileModal();
+        updateGroupFilterOptions();
         renderStudents();
         localStorage.setItem('mr_students_backup', JSON.stringify(studentsData));
         
