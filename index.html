@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#0f172a">
-  <title>تطبيق MR - إدارة الطلاب والمدفوعات</title>
+  <title>تطبيق MR - إدارة الطلاب والمدفوعات والمجموعات</title>
   <link rel="manifest" href="./manifest.json">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -141,7 +141,7 @@
             <i class="fa-solid fa-graduation-cap text-3xl text-slate-900"></i>
           </div>
           <h1 id="authTitle" class="text-2xl font-bold text-white mb-1">منصة MR</h1>
-          <p class="text-slate-400 text-sm">نظام إدارة الطلاب والمدفوعات</p>
+          <p class="text-slate-400 text-sm">نظام إدارة الطلاب والمدفوعات والمجموعات</p>
         </div>
 
         <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4">
@@ -245,7 +245,7 @@
           </div>
         </div>
 
-        <!-- Controls Bar -->
+        <!-- Controls Bar with Group Filter -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div class="md:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-2">
             <div class="sm:col-span-2 relative">
@@ -1381,7 +1381,6 @@
     }
 
     function setupRealtime() {
-      // Realtime للطلاب
       supabaseClient
         .channel('students-realtime-channel')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'students' }, () => {
@@ -1391,12 +1390,12 @@
         })
         .subscribe();
 
-      // Realtime لإعدادات المعلم
       supabaseClient
         .channel('teacher-settings-realtime-channel')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'teacher_settings' }, async () => {
           if (navigator.onLine) {
             await fetchTeacherSettingsFromSupabase();
+            showToast('تم تحديث بيانات المعلم من جهاز آخر تلقائياً ✓');
           }
         })
         .subscribe();
