@@ -105,7 +105,7 @@
 
         <button onclick="openTeacherAuthCheckModal()" class="w-full flex items-center gap-3 p-3 rounded-xl bg-slate-800/70 hover:bg-slate-800 border border-slate-700/70 font-bold text-slate-200 transition">
           <i class="fa-solid fa-shield-halved text-indigo-400 text-sm"></i>
-          <span>تعديل إعدادات وبيانات المعلم</span>
+          <span>تعديل بيانات المعلم وحالة الحجز</span>
         </button>
 
         <button onclick="openPrintCenterModal()" class="w-full flex items-center gap-3 p-3 rounded-xl bg-slate-800/70 hover:bg-slate-800 border border-slate-700/70 font-bold text-slate-200 transition">
@@ -205,16 +205,16 @@
             </div>
           </div>
 
-          <div class="flex items-center space-x-1.5 sm:space-x-2 space-x-reverse flex-shrink-0">
-            <button onclick="processOfflineQueue(true)" id="syncBtn" title="مزامنة فورية" class="bg-slate-800 hover:bg-slate-700 text-amber-400 p-2 sm:px-3 sm:py-2 rounded-xl text-xs sm:text-sm border border-slate-700 transition flex items-center space-x-1 space-x-reverse">
+          <div class="flex items-center space-x-2 space-x-reverse">
+            <button onclick="processOfflineQueue(true)" id="syncBtn" title="مزامنة فورية" class="bg-slate-800 hover:bg-slate-700 text-amber-400 px-3 py-2 rounded-xl text-sm border border-slate-700 transition flex items-center space-x-1 space-x-reverse">
               <i class="fa-solid fa-rotate" id="syncIcon"></i>
-              <span class="hidden md:inline">مزامنة</span>
+              <span class="hidden sm:inline">مزامنة</span>
             </button>
-            <button onclick="openScannerModal()" title="مسح كيو آر الحضور" class="bg-indigo-600 hover:bg-indigo-700 text-white p-2 sm:px-3 sm:py-2 rounded-xl text-xs sm:text-sm transition flex items-center space-x-1 space-x-reverse shadow-md">
+            <button onclick="openScannerModal()" title="مسح كيو آر الحضور" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-xl text-sm transition flex items-center space-x-1 space-x-reverse shadow-md">
               <i class="fa-solid fa-camera"></i>
-              <span class="hidden md:inline">مسح بالكاميرا</span>
+              <span class="hidden sm:inline">مسح بالكاميرا</span>
             </button>
-            <button onclick="openAddStudentModal()" class="gold-gradient text-slate-900 px-3 sm:px-4 py-2 rounded-xl font-extrabold text-xs sm:text-sm hover:opacity-90 transition flex items-center space-x-1.5 sm:space-x-2 space-x-reverse shadow">
+            <button onclick="openAddStudentModal()" class="gold-gradient text-slate-900 px-4 py-2 rounded-xl font-bold text-sm hover:opacity-90 transition flex items-center space-x-2 space-x-reverse">
               <i class="fa-solid fa-plus"></i>
               <span>إضافة طالب</span>
             </button>
@@ -394,7 +394,7 @@
     <div class="card-bg rounded-2xl max-w-md w-full p-6 space-y-4 border border-slate-700 shadow-2xl">
       <div class="flex items-center justify-between border-b border-slate-700 pb-3">
         <h3 class="font-bold text-slate-100 flex items-center gap-2">
-          <i class="fa-solid fa-user-gear text-indigo-400"></i> إعدادات المنصة والمعلم (سحابي)
+          <i class="fa-solid fa-user-gear text-indigo-400"></i> إعدادات المعلم وباب الحجز (سحابي)
         </h3>
         <button onclick="closeTeacherSettingsModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
@@ -413,7 +413,7 @@
           <input type="text" id="settingTeacherPassword" required class="w-full p-2.5 rounded-xl input-style text-xs" placeholder="••••••••">
         </div>
         <div>
-          <label class="block font-bold text-slate-300 mb-1">قيمة الاشتراك الشهري الافتراضية للطلاب الجدد (ج.م)</label>
+          <label class="block font-bold text-slate-300 mb-1">قيمة الاشتراك الشهري الافتراضية للطلاب (ج.م)</label>
           <input type="number" id="settingDefaultFee" required class="w-full p-2.5 rounded-xl input-style text-xs font-bold text-amber-400" value="150">
         </div>
         <div class="flex items-center justify-between bg-slate-900/80 p-3 rounded-xl border border-slate-800">
@@ -689,7 +689,7 @@
 
         <div>
           <label class="block text-xs font-medium text-slate-300 mb-1">قيمة الاشتراك الشهري (ج.م)</label>
-          <input type="number" id="newStudentFee" required class="w-full p-2.5 rounded-xl input-style text-sm font-bold text-amber-400">
+          <input type="number" id="newStudentFee" required class="w-full p-2.5 rounded-xl input-style text-sm font-bold text-amber-400" value="150">
         </div>
 
         <div class="pt-2 flex justify-end space-x-2 space-x-reverse">
@@ -1263,7 +1263,7 @@
         if (error) {
           showToast('تم التحديث محلياً، وتعذر الحفظ بالسحاب', 'error');
         } else {
-          showToast('تم تحديث إعدادات المنصة وحفظها بالسحاب لتتزامن فوراً ✓');
+          showToast('تم تحديث إعدادات المعلم وباب الحجز وحفظها بالسحاب ✓');
         }
       } else {
         showToast('أنت أوفلاين، سيتم حفظ الإعدادات على السحاب عند الاتصال بالنت', 'error');
@@ -1580,7 +1580,7 @@
         .on('postgres_changes', { event: '*', schema: 'public', table: 'teacher_settings' }, async () => {
           if (navigator.onLine) {
             await fetchTeacherSettingsFromSupabase();
-            showToast('تم تحديث إعدادات المنصة تلقائياً ✓');
+            showToast('تم تحديث إعدادات المعلم من جهاز آخر تلقائياً ✓');
           }
         })
         .subscribe();
