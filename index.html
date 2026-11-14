@@ -95,7 +95,6 @@
           <span>دفتر الخزينة والإيرادات اليومية</span>
         </button>
 
-        <!-- زرار طلبات الحجز الجديدة المضاف حديثاً -->
         <button onclick="openRequestsModal()" class="w-full flex items-center justify-between p-3 rounded-xl bg-indigo-950/70 hover:bg-indigo-900/80 border border-indigo-800/60 font-bold text-indigo-300 transition">
           <span class="flex items-center gap-3">
             <i class="fa-solid fa-user-clock text-indigo-400 text-sm"></i>
@@ -346,7 +345,7 @@
     </div>
   </div>
 
-  <!-- Modal: Booking Requests (أولياء الأمور الجدد) -->
+  <!-- Modal: Booking Requests -->
   <div id="bookingRequestsModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
     <div class="card-bg rounded-2xl max-w-2xl w-full p-6 space-y-4 border border-slate-700 shadow-2xl max-h-[90vh] flex flex-col">
       <div class="flex items-center justify-between border-b border-slate-700 pb-3 flex-shrink-0">
@@ -912,7 +911,6 @@
       document.getElementById('sideDrawer').classList.add('translate-x-full');
     }
 
-    // إدارة طلبات الحجز الجديدة
     async function fetchBookingRequests() {
       if (!navigator.onLine) return;
       try {
@@ -964,10 +962,8 @@
             <span class="bg-amber-500/15 text-amber-400 px-2 py-0.5 rounded-lg border border-amber-500/30 font-bold">${gradeNames[req.grade] || req.grade}</span>
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-1 text-slate-300">
-            <div>المجموعة المطلوبة: <strong class="text-white">${req.group_name || 'عام'}</strong></div>
             <div>هاتف ولي الأمر: <strong class="text-white font-mono">${req.parent_phone}</strong></div>
             <div>هاتف الطالب: <strong class="text-white font-mono">${req.student_phone || 'غير مسجل'}</strong></div>
-            <div>الاشتراك المقترح: <strong class="text-amber-400">${req.fee || 150} ج.م</strong></div>
           </div>
           <div class="flex gap-2 pt-2 border-t border-slate-800">
             <button onclick="acceptBookingRequest('${req.id}')" class="flex-1 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg transition shadow">قبول الحجز وتوليد كود ✓</button>
@@ -1002,7 +998,7 @@
         parent_phone: req.parent_phone,
         student_phone: req.student_phone || '',
         grade: req.grade,
-        group_name: req.group_name || 'عام',
+        group_name: 'لم تحدد بعد',
         fee: req.fee || 150,
         payments: {},
         attendance: []
@@ -1024,7 +1020,14 @@
 
       const cleanPhone = req.parent_phone.replace(/\D/g, '');
       const waPhone = cleanPhone.startsWith('2') ? cleanPhone : `2${cleanPhone}`;
-      const welcomeMsg = encodeURIComponent(`أهلاً بحضرتك يا فندم 🌹\nتم قبول طلب حجز الطالب: *${req.name}* في منصة ${teacherConfig.name}.\nكود الطالب الخاص به هو: *${assignedCode}*.\nيمكنكم الآن متابعة الحضور والمصاريف عبر بوابة أولياء الأمور. يسعدنا انضمامكم إلينا! 🎓`);
+      const welcomeMsg = encodeURIComponent(
+        `أهلاً بحضرتك يا فندم 🌹\n` +
+        `تم قبول طلب حجز الطالب: *${req.name}* في منصة ${teacherConfig.name}.\n` +
+        `• كود الطالب الخاص به: *${assignedCode}*\n` +
+        `• المجموعة المتاحة حالياً: *(اكتب الموعد هنا)*\n` +
+        `• قيمة الاشتراك الشهري: *150 ج.م*\n\n` +
+        `يمكنكم الآن متابعة الحضور والدرجات والمصاريف عبر بوابة أولياء الأمور. يسعدنا انضمامكم إلينا! 🎓`
+      );
       window.open(`https://wa.me/${waPhone}?text=${welcomeMsg}`, '_blank');
     }
 
@@ -1556,7 +1559,6 @@
         })
         .subscribe();
 
-      // استقبال طلبات الحجز الفورية من أولياء الأمور
       supabaseClient
         .channel('student-requests-realtime-channel')
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'student_requests' }, () => {
