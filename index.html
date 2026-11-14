@@ -95,6 +95,15 @@
           <span>دفتر الخزينة والإيرادات اليومية</span>
         </button>
 
+        <!-- زرار طلبات الحجز الجديدة المضاف حديثاً -->
+        <button onclick="openRequestsModal()" class="w-full flex items-center justify-between p-3 rounded-xl bg-indigo-950/70 hover:bg-indigo-900/80 border border-indigo-800/60 font-bold text-indigo-300 transition">
+          <span class="flex items-center gap-3">
+            <i class="fa-solid fa-user-clock text-indigo-400 text-sm"></i>
+            <span>طلبات الحجز الجديدة</span>
+          </span>
+          <span id="requestsBadge" class="bg-indigo-500 text-slate-900 text-[10px] px-2 py-0.5 rounded-full font-extrabold hidden">0</span>
+        </button>
+
         <button onclick="openTeacherAuthCheckModal()" class="w-full flex items-center gap-3 p-3 rounded-xl bg-slate-800/70 hover:bg-slate-800 border border-slate-700/70 font-bold text-slate-200 transition">
           <i class="fa-solid fa-shield-halved text-indigo-400 text-sm"></i>
           <span>تعديل بيانات المعلم والباسورد</span>
@@ -333,6 +342,22 @@
       <div class="flex-grow overflow-y-auto space-y-2 pr-1 pt-2">
         <h4 class="font-bold text-xs text-slate-300">سجل إيرادات الأيام السابقة</h4>
         <div id="treasuryRecordsList" class="space-y-1.5"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Booking Requests (أولياء الأمور الجدد) -->
+  <div id="bookingRequestsModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+    <div class="card-bg rounded-2xl max-w-2xl w-full p-6 space-y-4 border border-slate-700 shadow-2xl max-h-[90vh] flex flex-col">
+      <div class="flex items-center justify-between border-b border-slate-700 pb-3 flex-shrink-0">
+        <h3 class="font-bold text-slate-100 flex items-center gap-2 text-sm">
+          <i class="fa-solid fa-user-clock text-indigo-400"></i> طلبات الحجز والاستمارة المقدمة من أولياء الأمور
+        </h3>
+        <button onclick="closeRequestsModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <div class="flex-grow overflow-y-auto space-y-3 pr-1" id="bookingRequestsListContainer">
+        <p class="text-xs text-slate-500 text-center py-6">جاري تحميل الطلبات...</p>
       </div>
     </div>
   </div>
@@ -817,6 +842,7 @@
     let currentGrade = '1_prep';
     let studentsData = [];
     let treasuryData = [];
+    let bookingRequestsData = [];
     let activeProfileStudentId = null;
     let html5QrCode = null;
     let isTorchOn = false;
@@ -849,6 +875,7 @@
       updateConnectionBadge();
       checkAuthStatus();
       setupRealtime();
+      fetchBookingRequests();
     });
 
     function loadTeacherIdentity() {
@@ -883,6 +910,134 @@
     function closeSideDrawer() {
       document.getElementById('sideDrawerBackdrop').classList.add('hidden');
       document.getElementById('sideDrawer').classList.add('translate-x-full');
+    }
+
+    // إدارة طلبات الحجز الجديدة
+    async function fetchBookingRequests() {
+      if (!navigator.onLine) return;
+      try {
+        const { data, error } = await supabaseClient
+          .from('student_requests')
+          .select('*')
+          .eq('status', 'pending');
+
+        if (!error && data) {
+          bookingRequestsData = data;
+          const badge = document.getElementById('requestsBadge');
+          if (badge) {
+            if (data.length > 0) {
+              badge.textContent = data.length;
+              badge.classList.remove('hidden');
+            } else {
+              badge.classList.add('hidden');
+            }
+          }
+        }
+      } catch (e) {}
+    }
+
+    function openRequestsModal() {
+      closeSideDrawer();
+      renderBookingRequestsList();
+      document.getElementById('bookingRequestsModal').classList.remove('hidden');
+    }
+
+    function closeRequestsModal() {
+      document.getElementById('bookingRequestsModal').classList.add('hidden');
+    }
+
+    function renderBookingRequestsList() {
+      const container = document.getElementById('bookingRequestsListContainer');
+      container.innerHTML = '';
+
+      if (bookingRequestsData.length === 0) {
+        container.innerHTML = '<p class="text-xs text-slate-500 italic text-center py-8">لا توجد طلبات حجز معلقة حالياً.</p>';
+        return;
+      }
+
+      bookingRequestsData.forEach(req => {
+        const div = document.createElement('div');
+        div.className = 'card-bg p-4 rounded-xl border border-slate-700 space-y-2 text-xs';
+        div.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="font-extrabold text-white text-sm">${req.name}</span>
+            <span class="bg-amber-500/15 text-amber-400 px-2 py-0.5 rounded-lg border border-amber-500/30 font-bold">${gradeNames[req.grade] || req.grade}</span>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-1 text-slate-300">
+            <div>المجموعة المطلوبة: <strong class="text-white">${req.group_name || 'عام'}</strong></div>
+            <div>هاتف ولي الأمر: <strong class="text-white font-mono">${req.parent_phone}</strong></div>
+            <div>هاتف الطالب: <strong class="text-white font-mono">${req.student_phone || 'غير مسجل'}</strong></div>
+            <div>الاشتراك المقترح: <strong class="text-amber-400">${req.fee || 150} ج.م</strong></div>
+          </div>
+          <div class="flex gap-2 pt-2 border-t border-slate-800">
+            <button onclick="acceptBookingRequest('${req.id}')" class="flex-1 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg transition shadow">قبول الحجز وتوليد كود ✓</button>
+            <button onclick="rejectBookingRequest('${req.id}')" class="px-4 py-2 bg-red-950/70 hover:bg-red-900 text-red-300 border border-red-800/60 font-bold rounded-lg transition">رفض</button>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function generateAutoCodeForGrade(gradeKey) {
+      let maxNum = 0;
+      studentsData.forEach(s => {
+        if (s.grade === gradeKey) {
+          const c = parseInt(s.code);
+          if (!isNaN(c) && c > maxNum) maxNum = c;
+        }
+      });
+      return String(maxNum + 1);
+    }
+
+    async function acceptBookingRequest(reqId) {
+      const req = bookingRequestsData.find(r => r.id === reqId);
+      if (!req) return;
+
+      const assignedCode = generateAutoCodeForGrade(req.grade);
+
+      const newStudent = {
+        id: 'st_' + Date.now(),
+        code: assignedCode,
+        name: req.name,
+        parent_phone: req.parent_phone,
+        student_phone: req.student_phone || '',
+        grade: req.grade,
+        group_name: req.group_name || 'عام',
+        fee: req.fee || 150,
+        payments: {},
+        attendance: []
+      };
+
+      studentsData.push(newStudent);
+      updateGroupFilterOptions();
+      renderStudents();
+      await saveStudentToSupabase(newStudent);
+
+      await supabaseClient
+        .from('student_requests')
+        .update({ status: 'accepted' })
+        .eq('id', reqId);
+
+      fetchBookingRequests();
+      closeRequestsModal();
+      showToast(`تم قبول الحجز وتوليد كود (${assignedCode}) للطالب بنجاح! ✓`);
+
+      const cleanPhone = req.parent_phone.replace(/\D/g, '');
+      const waPhone = cleanPhone.startsWith('2') ? cleanPhone : `2${cleanPhone}`;
+      const welcomeMsg = encodeURIComponent(`أهلاً بحضرتك يا فندم 🌹\nتم قبول طلب حجز الطالب: *${req.name}* في منصة ${teacherConfig.name}.\nكود الطالب الخاص به هو: *${assignedCode}*.\nيمكنكم الآن متابعة الحضور والمصاريف عبر بوابة أولياء الأمور. يسعدنا انضمامكم إلينا! 🎓`);
+      window.open(`https://wa.me/${waPhone}?text=${welcomeMsg}`, '_blank');
+    }
+
+    async function rejectBookingRequest(reqId) {
+      if (!confirm('هل أنت متأكد من رفض طلب الحجز؟')) return;
+      await supabaseClient
+        .from('student_requests')
+        .update({ status: 'rejected' })
+        .eq('id', reqId);
+
+      fetchBookingRequests();
+      renderBookingRequestsList();
+      showToast('تم رفض الحجز');
     }
 
     async function shareApplication() {
@@ -1224,6 +1379,7 @@
       showToast('رجع الإنترنت! جاري إرسال التعديلات للسيرفر...');
       processOfflineQueue(false);
       fetchTeacherSettingsFromSupabase();
+      fetchBookingRequests();
     });
 
     window.addEventListener('offline', () => {
@@ -1397,6 +1553,15 @@
             await fetchTeacherSettingsFromSupabase();
             showToast('تم تحديث بيانات المعلم من جهاز آخر تلقائياً ✓');
           }
+        })
+        .subscribe();
+
+      // استقبال طلبات الحجز الفورية من أولياء الأمور
+      supabaseClient
+        .channel('student-requests-realtime-channel')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'student_requests' }, () => {
+          fetchBookingRequests();
+          showToast('وصلك طلب حجز جديد لطالب في السنتر! 🎓');
         })
         .subscribe();
     }
