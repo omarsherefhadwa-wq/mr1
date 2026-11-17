@@ -542,6 +542,25 @@
           </button>
         </div>
 
+        <!-- قسم ملاحظات المعلم للطالب -->
+        <div class="bg-slate-900/80 border border-slate-700 p-4 rounded-xl space-y-2.5 no-print">
+          <h4 class="font-bold text-amber-400 text-xs flex items-center gap-1.5">
+            <i class="fa-solid fa-comment-dots text-sm"></i> إرسال ملاحظة لولي الأمر (الموقع + واتساب)
+          </h4>
+          <textarea id="profNoteInput" rows="2" placeholder="اكتب ملاحظتك عن مستوى الطالب أو سلوكه أو الواجب..." class="w-full p-2.5 rounded-xl input-style text-xs resize-none"></textarea>
+          <div class="flex flex-col sm:flex-row gap-2">
+            <button onclick="saveStudentNote(false)" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition">
+              <i class="fa-solid fa-globe"></i>
+              <span>نشر بموقع ولي الأمر</span>
+            </button>
+            <button onclick="saveStudentNote(true)" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition shadow">
+              <i class="fa-brands fa-whatsapp text-sm"></i>
+              <span>نشر بالموقع + واتساب</span>
+            </button>
+          </div>
+          <div id="profNotesHistory" class="space-y-1.5 max-h-28 overflow-y-auto pt-1"></div>
+        </div>
+
         <div class="bg-emerald-950/20 border border-emerald-800/50 p-4 rounded-xl space-y-2.5 no-print">
           <div class="flex items-center justify-between">
             <h4 class="font-bold text-emerald-400 text-xs flex items-center gap-1.5">
@@ -1017,7 +1036,8 @@
         group_name: 'لم تحدد بعد',
         fee: teacherConfig.default_fee || 150,
         payments: {},
-        attendance: []
+        attendance: [],
+        notes: []
       };
 
       studentsData.push(newStudent);
@@ -1821,6 +1841,68 @@
         `;
         payList.appendChild(btn);
       }
+
+      const notesList = document.getElementById('profNotesHistory');
+      if (notesList) {
+        const notes = s.notes || [];
+        notesList.innerHTML = '';
+        notes.slice().reverse().forEach((n, idx) => {
+          const realIdx = notes.length - 1 - idx;
+          const div = document.createElement('div');
+          div.className = 'flex items-center justify-between bg-slate-950/70 px-3 py-1.5 rounded-lg border border-slate-800 text-[11px]';
+          div.innerHTML = `
+            <div class="truncate pl-2">
+              <span class="text-slate-400 font-mono">[${n.date}]</span>
+              <span class="text-slate-200 mr-1">${n.text}</span>
+            </div>
+            <button onclick="deleteStudentNote('${s.id}', ${realIdx})" class="text-slate-500 hover:text-red-400" title="حذف الملاحظة"><i class="fa-solid fa-trash-can"></i></button>
+          `;
+          notesList.appendChild(div);
+        });
+      }
+    }
+
+    async function saveStudentNote(sendWhatsApp = false) {
+      const s = studentsData.find(x => x.id === activeProfileStudentId);
+      const noteInput = document.getElementById('profNoteInput');
+      const text = noteInput.value.trim();
+
+      if (!s || !text) {
+        showToast('يرجى كتابة نص الملاحظة أولاً!', 'error');
+        return;
+      }
+
+      if (!s.notes) s.notes = [];
+      const today = new Date().toISOString().split('T')[0];
+      s.notes.push({ text, date: today });
+
+      noteInput.value = '';
+      renderProfileContent(s.id);
+      await saveStudentToSupabase(s);
+      showToast('تم حفظ ونشر الملاحظة لولي الأمر بنجاح ✓');
+
+      if (sendWhatsApp) {
+        const cleanPhone = s.parent_phone.replace(/\D/g, '');
+        const waPhone = cleanPhone.startsWith('2') ? cleanPhone : `2${cleanPhone}`;
+        const msg = encodeURIComponent(
+          `السلام عليكم ورحمة الله وبركاته 🌹\n` +
+          `ولي أمر الطالب: *${s.name}* (كود: ${s.code || '1'})\n` +
+          `📝 *ملاحظة من المعلم (${today}):*\n` +
+          `"${text}"\n\n` +
+          `مع تحيات إدارة منصة *${teacherConfig.name}* 🎓`
+        );
+        window.open(`https://wa.me/${waPhone}?text=${msg}`, '_blank');
+      }
+    }
+
+    async function deleteStudentNote(studentId, index) {
+      const s = studentsData.find(x => x.id === studentId);
+      if (s && s.notes) {
+        s.notes.splice(index, 1);
+        renderProfileContent(s.id);
+        await saveStudentToSupabase(s);
+        showToast('تم حذف الملاحظة');
+      }
     }
 
     function sendStudentMonthlyWhatsApp() {
@@ -2056,7 +2138,8 @@
           group_name: document.getElementById('newStudentGroup').value.trim(),
           fee: Number(document.getElementById('newStudentFee').value) || teacherConfig.default_fee || 150,
           payments: {},
-          attendance: []
+          attendance: [],
+          notes: []
         };
 
         studentsData.push(newStudent);
