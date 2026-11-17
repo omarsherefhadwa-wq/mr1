@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#0f172a">
+  <meta name="theme-color" content="#ffffff">
   <title>تطبيق MR - إدارة الطلاب والمدفوعات والمجموعات</title>
   <link rel="manifest" href="./manifest.json">
   <script src="https://cdn.tailwindcss.com"></script>
@@ -14,6 +14,17 @@
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
+      --bg-main: #f8fafc;
+      --bg-card: #ffffff;
+      --border-card: #e2e8f0;
+      --bg-input: #f1f5f9;
+      --border-input: #cbd5e1;
+      --text-main: #0f172a;
+      --text-sub: #334155;
+      --text-muted: #64748b;
+    }
+
+    html.dark {
       --bg-main: #0f172a;
       --bg-card: #1e293b;
       --border-card: #334155;
@@ -28,6 +39,7 @@
       font-family: 'Tajawal', sans-serif;
       background-color: var(--bg-main);
       color: var(--text-main);
+      transition: background-color 0.25s ease, color 0.25s ease;
     }
 
     .gold-gradient {
@@ -50,9 +62,49 @@
       outline: none;
     }
 
+    /* تحويل ألوان العناصر الداكنة تلقائياً في الوضع النهاري دون المساس بالوضع الليلي */
+    html:not(.dark) .text-white { color: #0f172a !important; }
+    html:not(.dark) .text-slate-100 { color: #1e293b !important; }
+    html:not(.dark) .text-slate-200 { color: #1e293b !important; }
+    html:not(.dark) .text-slate-300 { color: #334155 !important; }
+    html:not(.dark) .text-slate-400 { color: #64748b !important; }
+    html:not(.dark) .bg-slate-950\/50,
+    html:not(.dark) .bg-slate-950\/60,
+    html:not(.dark) .bg-slate-950\/70,
+    html:not(.dark) .bg-slate-900,
+    html:not(.dark) .bg-slate-900\/80,
+    html:not(.dark) .bg-slate-900\/70,
+    html:not(.dark) .bg-slate-900\/60,
+    html:not(.dark) .bg-slate-900\/40 { background-color: #f1f5f9 !important; }
+    html:not(.dark) .bg-slate-800,
+    html:not(.dark) .bg-slate-800\/70 { background-color: #e2e8f0 !important; color: #0f172a !important; }
+    html:not(.dark) .grade-tab.gold-gradient { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important; color: #0f172a !important; }
+    html:not(.dark) .hover\:bg-slate-800:hover,
+    html:not(.dark) .hover\:bg-slate-700:hover { background-color: #cbd5e1 !important; }
+    html:not(.dark) .border-slate-800,
+    html:not(.dark) .border-slate-700,
+    html:not(.dark) .border-slate-700\/80,
+    html:not(.dark) .border-slate-700\/70 { border-color: #e2e8f0 !important; }
+    html:not(.dark) .bg-emerald-950\/70,
+    html:not(.dark) .bg-emerald-950\/80,
+    html:not(.dark) .bg-emerald-950\/20 { background-color: #ecfdf5 !important; border-color: #a7f3d0 !important; color: #065f46 !important; }
+    html:not(.dark) .text-emerald-300 { color: #065f46 !important; }
+    html:not(.dark) .text-emerald-400 { color: #059669 !important; }
+    html:not(.dark) .bg-red-950\/70,
+    html:not(.dark) .bg-red-950\/60,
+    html:not(.dark) .bg-red-950\/50 { background-color: #fef2f2 !important; border-color: #fecaca !important; color: #991b1b !important; }
+    html:not(.dark) .text-red-300 { color: #991b1b !important; }
+    html:not(.dark) .bg-indigo-950,
+    html:not(.dark) .bg-indigo-950\/70 { background-color: #eef2ff !important; color: #3730a3 !important; border-color: #c7d2fe !important; }
+    html:not(.dark) .text-indigo-300 { color: #3730a3 !important; }
+    html:not(.dark) .text-amber-400 { color: #d97706 !important; }
+    html:not(.dark) .bg-indigo-600,
+    html:not(.dark) .bg-emerald-600 { color: #ffffff !important; }
+
     ::-webkit-scrollbar { width: 8px; }
     ::-webkit-scrollbar-track { background: var(--bg-main); }
-    ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    html.dark ::-webkit-scrollbar-thumb { background: #475569; }
 
     @media print {
       body * { visibility: hidden; }
@@ -90,6 +142,15 @@
       </div>
 
       <nav class="space-y-2.5 text-xs">
+        <!-- زر التبديل بين الوضع الليلي والنهاري (في أول قائمة الإعدادات) -->
+        <button onclick="toggleThemeMode()" class="w-full flex items-center justify-between p-3 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 font-bold text-amber-500 transition">
+          <span class="flex items-center gap-2.5">
+            <i id="themeToggleIcon" class="fa-solid fa-moon text-sm"></i>
+            <span id="themeToggleText">الوضع الليلي</span>
+          </span>
+          <span id="themeBadgeLabel" class="text-[10px] px-2 py-0.5 rounded-full bg-amber-500 text-slate-900 font-extrabold">نهاري</span>
+        </button>
+
         <button onclick="openTreasuryModal()" class="w-full flex items-center gap-3 p-3 rounded-xl bg-slate-800/70 hover:bg-slate-800 border border-slate-700/70 font-bold text-slate-200 transition">
           <i class="fa-solid fa-vault text-amber-400 text-sm"></i>
           <span>دفتر الخزينة والإيرادات اليومية</span>
@@ -142,7 +203,7 @@
   <div id="app" class="flex-grow flex flex-col">
     <!-- Auth Screen -->
     <div id="authScreen" class="flex-grow flex items-center justify-center p-4">
-      <div class="card-bg p-8 rounded-2xl shadow-2xl w-full max-w-md border border-slate-700 relative overflow-hidden">
+      <div class="card-bg p-8 rounded-2xl shadow-xl w-full max-w-md border border-slate-700 relative overflow-hidden">
         <div class="absolute top-0 right-0 w-2 h-full gold-gradient"></div>
         <div class="text-center mb-8">
           <div class="w-20 h-20 gold-gradient rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
@@ -187,7 +248,7 @@
     <!-- Main Dashboard -->
     <div id="dashboardScreen" class="hidden flex-grow flex flex-col">
       <!-- Navbar -->
-      <header class="card-bg border-b border-slate-700 sticky top-0 z-30">
+      <header class="card-bg border-b border-slate-700 sticky top-0 z-30 shadow-sm">
         <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-2">
           
           <div class="flex items-center space-x-2 sm:space-x-3 space-x-reverse min-w-0 flex-grow">
@@ -237,20 +298,20 @@
 
         <!-- Financial Summary Banner -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div class="card-bg p-4 rounded-2xl border-r-4 border-amber-500 flex items-center justify-between">
+          <div class="card-bg p-4 rounded-2xl border-r-4 border-amber-500 flex items-center justify-between shadow-sm">
             <div>
               <span class="text-xs text-slate-400 block font-medium">مجموع مدفوعات الصف الحالي</span>
               <span id="gradeTotalAmount" class="text-xl font-bold text-amber-400">0 ج.م</span>
             </div>
-            <i class="fa-solid fa-wallet text-2xl text-slate-700"></i>
+            <i class="fa-solid fa-wallet text-2xl text-slate-400"></i>
           </div>
 
-          <div class="card-bg p-4 rounded-2xl border-r-4 border-emerald-500 flex items-center justify-between">
+          <div class="card-bg p-4 rounded-2xl border-r-4 border-emerald-500 flex items-center justify-between shadow-sm">
             <div>
               <span class="text-xs text-slate-400 block font-medium">إجمالي تحصيل كل الصفوف</span>
               <span id="allGradesTotalAmount" class="text-xl font-bold text-emerald-400">0 ج.م</span>
             </div>
-            <i class="fa-solid fa-coins text-2xl text-slate-700"></i>
+            <i class="fa-solid fa-coins text-2xl text-slate-400"></i>
           </div>
         </div>
 
@@ -270,7 +331,7 @@
             </div>
           </div>
 
-          <button onclick="openReportModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl text-sm transition flex items-center justify-center space-x-2 space-x-reverse shadow-lg">
+          <button onclick="openReportModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl text-sm transition flex items-center justify-center space-x-2 space-x-reverse shadow-md">
             <i class="fa-solid fa-chart-pie"></i>
             <span>تقرير آخر الشهر والشهور المستحقة</span>
           </button>
@@ -294,7 +355,7 @@
 
         <!-- Empty State -->
         <div id="emptyState" class="hidden text-center py-12 card-bg rounded-2xl">
-          <i class="fa-solid fa-user-slash text-4xl text-slate-600 mb-3"></i>
+          <i class="fa-solid fa-user-slash text-4xl text-slate-400 mb-3"></i>
           <p class="text-slate-400 text-sm">لا يوجد طلاب مسجلين في هذا الصف حتى الآن.</p>
         </div>
       </main>
@@ -320,7 +381,7 @@
           <span class="text-xs text-slate-400 block font-medium">إجمالي الإيرادات المسجلة</span>
           <span id="totalTreasurySum" class="text-xl font-bold text-emerald-400">0 ج.م</span>
         </div>
-        <i class="fa-solid fa-sack-dollar text-3xl text-slate-700"></i>
+        <i class="fa-solid fa-sack-dollar text-3xl text-slate-400"></i>
       </div>
 
       <form onsubmit="handleTreasurySubmit(event)" class="grid grid-cols-1 sm:grid-cols-3 gap-2 flex-shrink-0">
@@ -857,6 +918,38 @@
   </div>
 
   <script>
+    // إدارة الوضع النهاري والليلي (الافتراضي نهاري أبيض)
+    function applySavedTheme() {
+      const savedTheme = localStorage.getItem('mr_teacher_theme') || 'light';
+      const htmlEl = document.documentElement;
+      const metaTheme = document.querySelector('meta[name="theme-color"]');
+      const icon = document.getElementById('themeToggleIcon');
+      const text = document.getElementById('themeToggleText');
+      const badge = document.getElementById('themeBadgeLabel');
+
+      if (savedTheme === 'dark') {
+        htmlEl.classList.add('dark');
+        if (metaTheme) metaTheme.setAttribute('content', '#0f172a');
+        if (icon) icon.className = 'fa-solid fa-sun text-sm';
+        if (text) text.textContent = 'الوضع النهاري';
+        if (badge) badge.textContent = 'ليلي';
+      } else {
+        htmlEl.classList.remove('dark');
+        if (metaTheme) metaTheme.setAttribute('content', '#ffffff');
+        if (icon) icon.className = 'fa-solid fa-moon text-sm';
+        if (text) text.textContent = 'الوضع الليلي';
+        if (badge) badge.textContent = 'نهاري';
+      }
+    }
+
+    function toggleThemeMode() {
+      const isDark = document.documentElement.classList.contains('dark');
+      localStorage.setItem('mr_teacher_theme', isDark ? 'light' : 'dark');
+      applySavedTheme();
+    }
+
+    applySavedTheme();
+
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js')
@@ -902,6 +995,7 @@
     };
 
     window.addEventListener('DOMContentLoaded', async () => {
+      applySavedTheme();
       await fetchTeacherSettingsFromSupabase();
       loadTreasuryFromStorage();
       updateConnectionBadge();
